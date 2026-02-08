@@ -1,8 +1,11 @@
+import Layout from "./components/layout/Layout";
+import Board from "./features/board/Board";
+
 function App() {
   return (
-    <div>
-      <h1>Hola :)</h1>
-    </div>
+    <Layout>
+      <Board />
+    </Layout>
   );
 }
 
