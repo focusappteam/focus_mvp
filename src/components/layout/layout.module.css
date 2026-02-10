@@ -1,0 +1,159 @@
+.app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* HEADER */
+
+.header {
+    height: 60px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: white;
+}
+
+.headerCenter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.logoPrimary {
+    color: #4c6f70;   
+}
+
+.logoSecondary {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.timerBadge {
+    background: #eef2f1;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.focusBadge {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.search {
+    max-width: 240px;
+    width: 100%;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.userAvatar {
+    width: 32px;
+    height: 32px;
+    background: #e5e7eb;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: #f8fafb;
+    padding: 20px;
+    border-right: 1px solid #e5e7eb;
+}
+
+.sidebarTitle {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+
+.navList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.navItem {
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.navItem:hover {
+    background: #e5e7eb;
+}
+
+.active {
+    background: #e5f0ec;
+    font-weight: 600;
+}
+
+.createButton {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #f7f7f7;
+    color: #7F8E8E;
+    font-weight: 600;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+/* main */
+.body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.main {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+    .sidebar {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .headerCenter {
+        display: none;
+    }
+}
