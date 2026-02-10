@@ -17,23 +17,48 @@
 
 .zoomControls {
     position: fixed;
-    bottom: 20px;
-    left: 260px;
+    bottom: 24px;
+    left: 24px;
     display: flex;
-    gap: 8px;
-    z-index: 10;
+    gap: 10px;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(6px);
+    padding: 6px;
+    border-radius: 14px;
 }
 
 .zoomControls button {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     border: none;
-    background: white;
+
+    background: #e5f0ec;
+    color: #065f46;
+    font-size: 18px;
+    font-weight: 700;
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+
+.zoomControls button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.zoomControls button:active {
+    transform: translateY(0);
+    box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
 
 .createTaskButton {
     position: absolute;
@@ -94,7 +119,7 @@
     }
 
     .zoomControls {
-        bottom: 12px;
-        left: 12px;
+        bottom: 16px;
+        left: 16px;
     }
 }
