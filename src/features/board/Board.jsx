@@ -1,11 +1,14 @@
+import { useState } from "react";
 import styles from "./board.module.css"
 import { tasksMock } from "./board.mock";
 import Task from "./Task"
 
 function Board() {
+    const [tasks, setTasks] = useState(tasksMock);
+
     return (
         <div className={styles.canvas}>
-            {tasksMock.map(task => (
+            {tasks.map(task => (
                 <Task key={task.id} task={task} />
             ))}
 
