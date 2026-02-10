@@ -32,7 +32,12 @@ function Board() {
             </div>
 
             {isCreatingTask && (
-                <CreateTaskModal onClose={() => setIsCreatingTask(false)} />
+                <CreateTaskModal
+                    onClose={() => setIsCreatingTask(false)}
+                    onCreate={(newTask) =>
+                        setTasks((prevTasks) => [...prevTasks, newTask])
+                    }
+                />
             )}
 
 
