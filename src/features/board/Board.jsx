@@ -2,13 +2,14 @@ import { useState } from "react";
 import styles from "./board.module.css"
 import { tasksMock } from "./board.mock";
 import Task from "./Task"
+import CreateTaskModal from "./CreateTaskModal";
 
 function Board() {
     const [tasks, setTasks] = useState(tasksMock)
     const [isCreatingTask, setIsCreatingTask] = useState(false)
 
     return (
-        <div 
+        <div
             className={styles.canvas}
             onDoubleClick={() => setIsCreatingTask(true)}
         >
@@ -31,10 +32,9 @@ function Board() {
             </div>
 
             {isCreatingTask && (
-                <div className={styles.createTaskDebug}>
-                    Creando nueva tarea...
-                </div>
+                <CreateTaskModal onClose={() => setIsCreatingTask(false)} />
             )}
+
 
         </div>
     );
