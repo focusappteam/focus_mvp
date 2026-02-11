@@ -1,6 +1,6 @@
 .canvas {
     flex: 1;
-    background-color: var(--color-background);
+    background-color: #F6F8FA;
     padding: 24px;
     overflow: auto;
     box-sizing: border-box;
