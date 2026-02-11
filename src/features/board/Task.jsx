@@ -1,14 +1,14 @@
-import styles from "./board.module.css"
+import styles from "./board.module.css";
 
 function Task({ task }) {
-    const { title, position } = task;
+    const { title } = task;
+    const { x = 0, y = 0 } = task.position || {};
 
     return (
         <div
             className={styles.task}
-            style ={{
-                left: position.x,
-                top: position.y
+            style={{
+                transform: `translate(${x}px, ${y}px)`
             }}
         >
             {title}

@@ -3,7 +3,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-}
+}   
 
 /* HEADER */
 
@@ -17,7 +17,8 @@
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     overflow: hidden;
-    background-color: white;
+    background-color: #FFFFFF;
+    color: var(--color-dark);
 }
 
 .headerCenter {
@@ -34,7 +35,7 @@
 }
 
 .logoPrimary {
-    color: #4c6f70;   
+    color: var(--color-primary);
 }
 
 .logoSecondary {
@@ -83,7 +84,8 @@
 .sidebar {
     width: 220px;
     flex-shrink: 0;
-    background: #f8fafb;
+    background: var(--color-background);
+    color: var(--color-primary);
     padding: 20px;
     border-right: 1px solid #e5e7eb;
 }
@@ -113,7 +115,7 @@
 }
 
 .active {
-    background: #e5f0ec;
+    background: rgba(76, 111, 112, 0.12);
     font-weight: 600;
 }
 

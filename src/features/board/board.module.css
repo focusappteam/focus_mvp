@@ -1,6 +1,6 @@
 .canvas {
     flex: 1;
-    background-color: #f6f8fa;
+    background-color: #F6F8FA;
     padding: 24px;
     overflow: auto;
     box-sizing: border-box;
@@ -11,34 +11,79 @@
     bottom: 20px;
     right: 24px;
     font-size: 12px;
-    color: #6b7280;
+    color: rgba(23, 27, 27, 0.5);
     pointer-events: none;
 }
 
 .zoomControls {
     position: fixed;
-    bottom: 20px;
-    left: 260px;
+    bottom: 24px;
+    left: 24px;
     display: flex;
-    gap: 8px;
-    z-index: 10;
+    gap: 10px;
+    z-index: 20;
+    background: rgba(247, 247, 247, 0.7);
+    backdrop-filter: blur(6px);
+    padding: 6px;
+    border-radius: 14px;
 }
 
 .zoomControls button {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     border: none;
-    background: white;
+
+    background: rgba(76, 111, 112, 0.15);
+    color: var(--color-primary);
+    font-size: 18px;
+    font-weight: 700;
+
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zoomControls button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.zoomControls button:active {
+    transform: translateY(0);
+    box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.18);
 }
 
 
+.createTaskButton {
+    position: absolute;
+    bottom: 80px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    color: var(--color-background);
+    font-size: 28px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.createTaskButton:hover {
+    transform: scale(1.05);
+}
+
 .task {
     position: absolute;
-    background: white;
+    background: var(--color-background);
+    color: var(--color-dark);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
@@ -50,6 +95,19 @@
 .task:hover {
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
 }
+
+.createTaskDebug {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
 
 @media (max-width: 768px) {
     .canvas {
@@ -63,7 +121,7 @@
     }
 
     .zoomControls {
-        bottom: 12px;
-        left: 12px;
+        bottom: 16px;
+        left: 16px;
     }
 }
