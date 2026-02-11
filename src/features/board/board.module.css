@@ -1,6 +1,6 @@
 .canvas {
     flex: 1;
-    background-color: #f6f8fa;
+    background-color: var(--color-background);
     padding: 24px;
     overflow: auto;
     box-sizing: border-box;
@@ -11,7 +11,7 @@
     bottom: 20px;
     right: 24px;
     font-size: 12px;
-    color: #6b7280;
+    color: rgba(23, 27, 27, 0.5);
     pointer-events: none;
 }
 
@@ -22,7 +22,7 @@
     display: flex;
     gap: 10px;
     z-index: 20;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(247, 247, 247, 0.7);
     backdrop-filter: blur(6px);
     padding: 6px;
     border-radius: 14px;
@@ -34,8 +34,8 @@
     border-radius: 10px;
     border: none;
 
-    background: #e5f0ec;
-    color: #065f46;
+    background: rgba(76, 111, 112, 0.15);
+    color: var(--color-primary);
     font-size: 18px;
     font-weight: 700;
 
@@ -67,8 +67,8 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background-color: #065f46;
-    color: white;
+    background-color: var(--color-primary);
+    color: var(--color-background);
     font-size: 28px;
     border: none;
     cursor: pointer;
@@ -81,7 +81,9 @@
 
 .task {
     position: absolute;
-    background: white;
+    background: var(--color-background);
+    color: var(--color-dark);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
