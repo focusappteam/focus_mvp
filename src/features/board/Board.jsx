@@ -5,7 +5,7 @@ import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
 
 function Board() {
-    const [tasks, setTasks] = useState(tasksMock)
+    const [tasks, setTasks] = useState([])
     const [isCreatingTask, setIsCreatingTask] = useState(false)
 
     return (
