@@ -3,6 +3,7 @@ import styles from "./board.module.css"
 import { tasksMock } from "./board.mock";
 import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
+import { DndContext } from "@dnd-kit/core";
 
 function Board() {
     const [tasks, setTasks] = useState([])
@@ -13,9 +14,11 @@ function Board() {
             className={styles.canvas}
             onDoubleClick={() => setIsCreatingTask(true)}
         >
-            {tasks.map(task => (
-                <Task key={task.id} task={task} />
-            ))}
+            <DndContext>
+                {tasks.map(task => (
+                    <Task key={task.id} task={task} />
+                ))}
+            </DndContext>
 
             <div className={styles.zoomControls}>
                 <button>+</button>
@@ -39,8 +42,6 @@ function Board() {
                     }
                 />
             )}
-
-
         </div>
     );
 }
