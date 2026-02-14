@@ -3,19 +3,63 @@ import styles from "./board.module.css"
 import { tasksMock } from "./board.mock";
 import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
+import { DndContext } from "@dnd-kit/core";
 
 function Board() {
     const [tasks, setTasks] = useState([])
     const [isCreatingTask, setIsCreatingTask] = useState(false)
+    const TASK_WIDTH = 260;
+    const TASK_HEIGHT = 60;
+
+    function isColliding(a, b) {
+        return !(
+            a.x + TASK_WIDTH < b.x ||
+            a.x > b.x + TASK_WIDTH ||
+            a.y + TASK_HEIGHT < b.y ||
+            a.y > b.y + TASK_HEIGHT
+        );
+    }
+
+    function handleDragEnd(event) {
+        const { active, delta } = event;
+        setTasks((prevTasks) => {
+            const activeTask = prevTasks.find(t => t.id === active.id);
+            if (!activeTask) return prevTasks;
+
+            const newPosition = {
+                x: (activeTask.position?.x || 0) + delta.x,
+                y: (activeTask.position?.y || 0) + delta.y,
+            };
+
+            const hasCollision = prevTasks.some(task => {
+                if (task.id === active.id) return false;
+
+                return isColliding(newPosition, task.position);
+            });
+
+            if (hasCollision) {
+                return prevTasks;
+            }
+
+            return prevTasks.map(task =>
+                task.id === active.id
+                    ? { ...task, position: newPosition }
+                    : task
+            );
+        });
+    }
+
 
     return (
         <div
             className={styles.canvas}
             onDoubleClick={() => setIsCreatingTask(true)}
         >
-            {tasks.map(task => (
-                <Task key={task.id} task={task} />
-            ))}
+            <DndContext onDragEnd={handleDragEnd}>
+                {tasks.map(task => (
+                    <Task key={task.id} task={task} />
+                ))}
+            </DndContext>
 
             <div className={styles.zoomControls}>
                 <button>+</button>
@@ -39,8 +83,6 @@ function Board() {
                     }
                 />
             )}
-
-
         </div>
     );
 }

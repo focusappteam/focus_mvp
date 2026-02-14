@@ -1,4 +1,5 @@
 .canvas {
+    position: relative;
     flex: 1;
     background-color: #F6F8FA;
     padding: 24px;
@@ -61,7 +62,7 @@
 
 
 .createTaskButton {
-    position: absolute;
+    position: fixed;
     bottom: 80px;
     right: 24px;
     width: 48px;
@@ -73,6 +74,7 @@
     border: none;
     cursor: pointer;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    z-index: 30;
 }
 
 .createTaskButton:hover {
