@@ -3,11 +3,13 @@ import { useState } from "react";
 
 
 function CreateTaskModal({ onClose, onCreate }) {
+    
     const [form, setForm] = useState({
         title: "",
         description: "",
         color: "#4f46e5"
     });
+
 
     function handleSubmit(e) {
         e.preventDefault();

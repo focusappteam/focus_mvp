@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./board.module.css"
 import { tasksMock } from "./board.mock";
 import Task from "./Task"
@@ -6,7 +6,14 @@ import CreateTaskModal from "./CreateTaskModal";
 import { DndContext } from "@dnd-kit/core";
 
 function Board() {
-    const [tasks, setTasks] = useState([])
+    const [tasks, setTasks] = useState(()=>{
+        const savedTasks = localStorage.getItem("tasks");
+        return savedTasks ? JSON.parse(savedTasks):[];
+    })
+
+    useEffect(()=>{
+        localStorage.setItem("tasks", JSON.stringify(tasks),[tasks])
+    })
     const [isCreatingTask, setIsCreatingTask] = useState(false)
     const TASK_WIDTH = 260;
     const TASK_HEIGHT = 60;
