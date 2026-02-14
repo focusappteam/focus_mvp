@@ -3,33 +3,34 @@ import { useState } from "react";
 
 
 function CreateTaskModal({ onClose, onCreate }) {
-    const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
-    const [color, setColor] = useState("#4f46e5");
+    const [form, setForm] = useState({
+        title: "",
+        description: "",
+        color: "#4f46e5"
+    });
 
     function handleSubmit(e) {
         e.preventDefault();
 
-        if (!title.trim()) return;
+        if (!form.title.trim()) return;
 
         const newTask = {
             id: crypto.randomUUID(),
-            title,
-            description,
+            title: form.title,
+            description: form.description,
             status: "todo",
             createdAt: new Date().toISOString(),
             time: 0,
             timeActive: 0,
-            style: { color },
+            style: { color: form.color },
             position: {
                 x: 100,
                 y: 100
             }
         };
 
-
-        onCreate(newTask)
-        onClose()
+        onCreate(newTask);
+        onClose();
     }
 
     return (
@@ -43,8 +44,8 @@ function CreateTaskModal({ onClose, onCreate }) {
                         <input
                             type="text"
                             placeholder="Ej: Estudiar React"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            value={form.title}
+                            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                             required
                         />
                     </div>
@@ -53,8 +54,8 @@ function CreateTaskModal({ onClose, onCreate }) {
                         <label>Descripción</label>
                         <textarea
                             placeholder="Opcional"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            value={form.description}
+                            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         />
                     </div>
 
@@ -62,8 +63,8 @@ function CreateTaskModal({ onClose, onCreate }) {
                         <label>Color</label>
                         <input
                             type="color"
-                            value={color}
-                            onChange={(e) => setColor(e.target.value)}
+                            value={form.color}
+                            onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                         />
                     </div>
 
