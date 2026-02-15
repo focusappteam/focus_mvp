@@ -59,10 +59,25 @@ function Board() {
     }
 
 
+    // Store last click position for modal
+    const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
+
+    function handleBoardDoubleClick(e) {
+        if (!isEditingTask) {
+            // Get click position relative to board
+            const rect = e.currentTarget.getBoundingClientRect();
+            setNewTaskPosition({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            });
+            setIsCreatingTask(true);
+        }
+    }
+
     return (
         <div
             className={styles.canvas}
-            onDoubleClick={() => { if (!isEditingTask) setIsCreatingTask(true) }}
+            onDoubleClick={handleBoardDoubleClick}
         >
             <DndContext onDragEnd={handleDragEnd}>
                 {tasks.map(task => (
@@ -97,6 +112,7 @@ function Board() {
                     onCreate={(newTask) =>
                         setTasks((prevTasks) => [...prevTasks, newTask])
                     }
+                    position={newTaskPosition}
                 />
             )}
 
