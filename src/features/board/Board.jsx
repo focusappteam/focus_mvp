@@ -3,18 +3,20 @@ import styles from "./board.module.css"
 import { tasksMock } from "./board.mock";
 import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
+import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 
 function Board() {
-    const [tasks, setTasks] = useState(()=>{
+    const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
-        return savedTasks ? JSON.parse(savedTasks):[];
+        return savedTasks ? JSON.parse(savedTasks) : [];
     })
-
-    useEffect(()=>{
-        localStorage.setItem("tasks", JSON.stringify(tasks),[tasks])
+    useEffect(() => {
+        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
     })
     const [isCreatingTask, setIsCreatingTask] = useState(false)
+    const [isEditingTask, setIsEditingTask] = useState(false)
+    const [editingTask, setEditingTask] = useState(null)
     const TASK_WIDTH = 260;
     const TASK_HEIGHT = 60;
 
@@ -60,11 +62,18 @@ function Board() {
     return (
         <div
             className={styles.canvas}
-            onDoubleClick={() => setIsCreatingTask(true)}
+            onDoubleClick={() => { if (!isEditingTask) setIsCreatingTask(true) }}
         >
             <DndContext onDragEnd={handleDragEnd}>
                 {tasks.map(task => (
-                    <Task key={task.id} task={task} />
+                    <Task
+                        key={task.id}
+                        task={task}
+                        onDoubleClick={(task) => {
+                            setEditingTask(task);
+                            setIsEditingTask(true);
+                        }}
+                    />
                 ))}
             </DndContext>
 
@@ -88,6 +97,20 @@ function Board() {
                     onCreate={(newTask) =>
                         setTasks((prevTasks) => [...prevTasks, newTask])
                     }
+                />
+            )}
+
+            {isEditingTask && editingTask && (
+                <EditTaskModal
+                    onClose={() => setIsEditingTask(false)}
+                    onSave={(updatedTask) =>
+                        setTasks((prevTasks) =>
+                            prevTasks.map(task =>
+                                task.id === updatedTask.id ? updatedTask : task
+                            )
+                        )
+                    }
+                    task={editingTask}
                 />
             )}
         </div>
