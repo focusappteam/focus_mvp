@@ -2,7 +2,7 @@ import styles from "./createTaskModal.module.css";
 import { useState } from "react";
 
 
-function CreateTaskModal({ onClose, onCreate }) {
+function CreateTaskModal({ onClose, onCreate, position }) {
     
     const [form, setForm] = useState({
         title: "",
@@ -25,10 +25,7 @@ function CreateTaskModal({ onClose, onCreate }) {
             time: 0,
             timeActive: 0,
             style: { color: form.color },
-            position: {
-                x: 100,
-                y: 100
-            }
+            position: position || { x: 100, y: 100 }
         };
 
         onCreate(newTask);
