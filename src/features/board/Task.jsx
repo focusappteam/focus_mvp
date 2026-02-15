@@ -1,7 +1,7 @@
 import styles from "./board.module.css";
 import { useDraggable } from "@dnd-kit/core";
 
-function Task({ task }) {
+function Task({ task, onDoubleClick }) {
     const { id, title } = task;
     const { x = 0, y = 0 } = task.position || {};
 
@@ -26,6 +26,10 @@ function Task({ task }) {
             style={style}
             {...listeners}
             {...attributes}
+            onDoubleClick={(e) => {
+                e.stopPropagation();
+                onDoubleClick(task);
+            }}
         >
             {title}
         </div>
