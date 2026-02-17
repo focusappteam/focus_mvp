@@ -7,7 +7,7 @@ function CreateTaskModal({ onClose, onCreate, position }) {
     const [form, setForm] = useState({
         title: "",
         description: "",
-        color: "#4f46e5"
+        color: ""
     });
 
 
@@ -21,11 +21,15 @@ function CreateTaskModal({ onClose, onCreate, position }) {
             title: form.title,
             description: form.description,
             status: "todo",
+            category: "General",
+            priority: "Medium",
             createdAt: new Date().toISOString(),
             time: 0,
             timeActive: 0,
             style: { color: form.color },
-            position: position || { x: 100, y: 100 }
+            position: position || { x: 100, y: 100 },
+            checklist: [],
+            tags: []
         };
 
         onCreate(newTask);
@@ -55,15 +59,6 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                             placeholder="Opcional"
                             value={form.description}
                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                        />
-                    </div>
-
-                    <div className={styles.field}>
-                        <label>Color</label>
-                        <input
-                            type="color"
-                            value={form.color}
-                            onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
                         />
                     </div>
 

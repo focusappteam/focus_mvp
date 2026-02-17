@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import styles from "./board.module.css"
-import { tasksMock } from "./board.mock";
 import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
@@ -124,6 +123,20 @@ function Board() {
                             prevTasks.map(task =>
                                 task.id === updatedTask.id ? updatedTask : task
                             )
+                        )
+                    }
+                    onDelete={(taskId) =>
+                        setTasks((prevTasks) =>
+                            prevTasks.filter(task => task.id !== taskId)
+                        )
+                    }
+                    onComplete={(taskId) =>
+                        setTasks((prevTasks) =>
+                            prevTasks.map(task =>
+                                task.id === taskId
+                                    ? { ...task, status: "completed" }
+                                    : task
+                            ).filter(task => task.status !== "completed")
                         )
                     }
                     task={editingTask}
