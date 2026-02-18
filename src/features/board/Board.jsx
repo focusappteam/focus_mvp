@@ -1,24 +1,71 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./board.module.css"
-import { tasksMock } from "./board.mock";
 import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 
 function Board() {
+    const MIN_ZOOM = 0.5;
+    const MAX_ZOOM = 2;
+    const ZOOM_STEP = 0.1;
+
+    const TASK_WIDTH = 260;
+    const TASK_HEIGHT = 60;
+    const HEADER_HEIGHT = 1;
+
+    const canvasRef = useRef(null);
+
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+    const [toast, setToast] = useState(null);
+    const [toastVisible, setToastVisible] = useState(false); // control entry/exit animations
+
     const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
         return savedTasks ? JSON.parse(savedTasks) : [];
     })
-    useEffect(() => {
-        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
-    })
+
     const [isCreatingTask, setIsCreatingTask] = useState(false)
     const [isEditingTask, setIsEditingTask] = useState(false)
     const [editingTask, setEditingTask] = useState(null)
-    const TASK_WIDTH = 260;
-    const TASK_HEIGHT = 60;
+
+    const [isPanning, setIsPanning] = useState(false);
+    const panStartRef = useRef({ x: 0, y: 0 });
+
+    const [isHoveringTask, setIsHoveringTask] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
+    })
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        canvas.addEventListener("wheel", handleWheel, { passive: false });
+
+        return () => {
+            canvas.removeEventListener("wheel", handleWheel);
+        };
+    }, []);
+
+    function showToast(message) {
+        // clear any pending timers so repeated calls reset the sequence
+        clearTimeout(showToast.timeout);
+        clearTimeout(showToast.cleanupTimeout);
+
+        setToast(message);
+        setToastVisible(true);
+
+        // after display duration, start exit animation
+        showToast.timeout = setTimeout(() => {
+            setToastVisible(false);
+            // once animation finishes, actually clear toast content
+            showToast.cleanupTimeout = setTimeout(() => setToast(null), 200);
+        }, 2000);
+    }
 
     function isColliding(a, b) {
         return !(
@@ -31,22 +78,42 @@ function Board() {
 
     function handleDragEnd(event) {
         const { active, delta } = event;
+
         setTasks((prevTasks) => {
             const activeTask = prevTasks.find(t => t.id === active.id);
             if (!activeTask) return prevTasks;
 
+            const adjustedDeltaX = delta.x / zoom;
+            const adjustedDeltaY = delta.y / zoom;
+
+            const rawX = (activeTask.position?.x || 0) + adjustedDeltaX;
+            const rawY = (activeTask.position?.y || 0) + adjustedDeltaY;
+
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+
+            const minVisibleY =
+                (HEADER_HEIGHT - offset.y) / zoom;
+
+            const isBehindHeader = rawY < minVisibleY;
+
             const newPosition = {
-                x: (activeTask.position?.x || 0) + delta.x,
-                y: (activeTask.position?.y || 0) + delta.y,
+                x: rawX,
+                y: isBehindHeader ? activeTask.position.y : rawY,
             };
+
+            if (isBehindHeader) {
+                showToast("Esta tarea no puede ser ubicada aqui");
+                return prevTasks;
+            }
 
             const hasCollision = prevTasks.some(task => {
                 if (task.id === active.id) return false;
-
                 return isColliding(newPosition, task.position);
             });
 
             if (hasCollision) {
+                showToast("La tarea no puede ubicarse sobre otra");
                 return prevTasks;
             }
 
@@ -58,7 +125,6 @@ function Board() {
         });
     }
 
-
     // Store last click position for modal
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
 
@@ -66,35 +132,159 @@ function Board() {
         if (!isEditingTask) {
             // Get click position relative to board
             const rect = e.currentTarget.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+
+            const worldX = (screenX - offset.x) / zoom;
+            const worldY = (screenY - offset.y) / zoom;
+
             setNewTaskPosition({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: worldX,
+                y: worldY,
             });
             setIsCreatingTask(true);
         }
     }
 
+    function handleWheel(e) {
+        if (!e.ctrlKey) return;
+
+        e.preventDefault();
+
+        const rect = canvasRef.current.getBoundingClientRect();
+
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        setZoom(prevZoom => {
+            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+            const nextZoom = Math.min(
+                MAX_ZOOM,
+                Math.max(MIN_ZOOM, +(prevZoom + delta).toFixed(2))
+            );
+
+            setOffset(prevOffset => {
+                const worldX = (mouseX - prevOffset.x) / prevZoom;
+                const worldY = (mouseY - prevOffset.y) / prevZoom;
+
+                return {
+                    x: mouseX - worldX * nextZoom,
+                    y: mouseY - worldY * nextZoom,
+                };
+            });
+
+            return nextZoom;
+        });
+    }
+
+    function zoomAtCenter(direction) {
+        const rect = canvasRef.current.getBoundingClientRect();
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        setZoom(prevZoom => {
+            const nextZoom = Math.min(
+                MAX_ZOOM,
+                Math.max(
+                    MIN_ZOOM,
+                    +(prevZoom + direction * ZOOM_STEP).toFixed(2)
+                )
+            );
+
+            setOffset(prevOffset => {
+                const worldX = (centerX - prevOffset.x) / prevZoom;
+                const worldY = (centerY - prevOffset.y) / prevZoom;
+
+                return {
+                    x: centerX - worldX * nextZoom,
+                    y: centerY - worldY * nextZoom,
+                };
+            });
+
+            return nextZoom;
+        });
+    }
+
+    function resetView() {
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+    }
+
     return (
         <div
+            ref={canvasRef}
             className={styles.canvas}
+            style={{ "--zoom": zoom }}
             onDoubleClick={handleBoardDoubleClick}
+            onContextMenu={(e) => e.preventDefault()}
+            onMouseDown={(e) => {
+                if (e.button !== 2) return;
+                if (isHoveringTask) return;
+
+                e.preventDefault();
+
+                setIsPanning(true);
+                panStartRef.current = {
+                    x: e.clientX - offset.x,
+                    y: e.clientY - offset.y,
+                };
+
+            }}
+
+            onMouseMove={(e) => {
+                if (!isPanning) return;
+
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+
+                const nextX = e.clientX - panStartRef.current.x;
+                const nextY = e.clientY - panStartRef.current.y;
+
+                setOffset({
+                    x: nextX,
+                    y: nextY,
+                });
+
+
+            }}
+
+            onMouseUp={() => setIsPanning(false)}
+            onMouseLeave={() => setIsPanning(false)}
         >
-            <DndContext onDragEnd={handleDragEnd}>
-                {tasks.map(task => (
-                    <Task
-                        key={task.id}
-                        task={task}
-                        onDoubleClick={(task) => {
-                            setEditingTask(task);
-                            setIsEditingTask(true);
-                        }}
-                    />
-                ))}
-            </DndContext>
+
+            <div
+                className={styles.viewport}
+                style={{
+                    transform: `
+                        translate(${offset.x}px, ${offset.y}px)
+                        scale(${zoom})
+                    `,
+                    transformOrigin: "0 0",
+                }}
+            >
+                <div className={styles.world}>
+                    <DndContext onDragEnd={handleDragEnd}>
+                        {tasks.map(task => (
+                            <Task
+                                key={task.id}
+                                task={task}
+                                zoom={zoom}
+                                onHoverChange={setIsHoveringTask}
+                                onDoubleClick={(task) => {
+                                    setEditingTask(task);
+                                    setIsEditingTask(true);
+                                }}
+                            />
+                        ))}
+                    </DndContext>
+                </div>
+            </div>
 
             <div className={styles.zoomControls}>
-                <button>+</button>
-                <button>-</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1) }}>+</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1) }}>-</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); resetView() }}>restore</button>
             </div>
 
             <button
@@ -128,6 +318,15 @@ function Board() {
                     }
                     task={editingTask}
                 />
+            )}
+
+            {toast && (
+                <div
+                    className={`${styles.toast} ${toastVisible ? styles.toastEnter : styles.toastExit
+                        }`}
+                >
+                    {toast}
+                </div>
             )}
         </div>
     );

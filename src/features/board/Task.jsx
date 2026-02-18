@@ -1,7 +1,7 @@
 import styles from "./board.module.css";
 import { useDraggable } from "@dnd-kit/core";
 
-function Task({ task, onDoubleClick }) {
+function Task({ task, onDoubleClick, zoom, onHoverChange }) {
     const { id, title } = task;
     const { x = 0, y = 0 } = task.position || {};
 
@@ -10,14 +10,22 @@ function Task({ task, onDoubleClick }) {
             id,
         })
 
+    const dragX = transform ? transform.x / zoom : 0;
+    const dragY = transform ? transform.y / zoom : 0;
+
     const style = {
         transform: `
-            translate(
-                ${x + (transform?.x || 0)}px,
-                ${y + (transform?.y || 0)}px
-            )
-        `,
-    }
+        translate(
+            ${x + dragX}px,
+            ${y + dragY}px
+        )
+    `,
+        cursor: transform ? "grabbing" : "grab",
+        zIndex: transform ? 1000 : "auto",
+        boxShadow: transform
+            ? "0 20px 40px rgba(0,0,0,0.25)"
+            : undefined,
+    };
 
     return (
         <div
@@ -26,6 +34,8 @@ function Task({ task, onDoubleClick }) {
             style={style}
             {...listeners}
             {...attributes}
+            onMouseEnter={() => onHoverChange(true)}
+            onMouseLeave={() => onHoverChange(false)}
             onDoubleClick={(e) => {
                 e.stopPropagation();
                 onDoubleClick(task);
