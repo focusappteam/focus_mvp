@@ -316,6 +316,20 @@ function Board() {
                             )
                         )
                     }
+                    onDelete={(taskId) =>
+                        setTasks((prevTasks) =>
+                            prevTasks.filter(task => task.id !== taskId)
+                        )
+                    }
+                    onComplete={(taskId) =>
+                        setTasks((prevTasks) =>
+                            prevTasks.map(task =>
+                                task.id === taskId && task.status !== "completed"
+                                    ? { ...task, status: "completed", tags: [...(task.tags || []), "COMPLETED"] }
+                                    : task
+                            )
+                        )
+                    }
                     task={editingTask}
                 />
             )}

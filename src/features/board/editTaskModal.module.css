@@ -1,0 +1,599 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.modal {
+    background: #fff;
+    width: 900px;
+    max-width: 95vw;
+    max-height: 90vh;
+    border-radius: 16px;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Left Panel - Main Content */
+.mainContent {
+    flex: 1;
+    padding: 28px 32px;
+    overflow-y: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.category {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4a5e52;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.categoryIcon {
+    display: flex;
+    align-items: center;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeButton:hover {
+    color: #6b7280;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+}
+
+.meta {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 20px;
+}
+
+.priority {
+    color: #ef6b5a;
+    font-weight: 600;
+}
+
+.description {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #4b5563;
+    margin-bottom: 28px;
+}
+
+/* Checklist Section */
+.checklistSection {
+    margin-bottom: 28px;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+
+.sectionIcon {
+    display: flex;
+    align-items: center;
+    color: #9ca3af;
+}
+
+.checklistItems {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.checklistItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.checklistItem:hover {
+    background: #f3f4f6;
+}
+
+.checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.checkbox.checked {
+    background: #4a5e52;
+    border-color: #4a5e52;
+}
+
+.checkmark {
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.checklistText {
+    font-size: 14px;
+    color: #374151;
+    flex: 1;
+}
+
+.checklistItem.checked .checklistText {
+    text-decoration: line-through;
+    color: #9ca3af;
+}
+
+.removeChecklistItem {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #d1d5db;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+    opacity: 0;
+}
+
+.checklistItem:hover .removeChecklistItem {
+    opacity: 1;
+}
+
+.removeChecklistItem:hover {
+    color: #ef6b5a;
+    background: #fef2f2;
+}
+
+.addChecklistItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: transparent;
+    border: 2px dashed #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+}
+
+.addChecklistItem:hover {
+    border-color: #d1d5db;
+    background: #f9fafb;
+}
+
+.addIcon {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d1d5db;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+}
+
+.addText {
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+.newChecklistInput {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: #374151;
+    outline: none;
+}
+
+/* Tags Section */
+.tagsSection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.tag {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border: 2px solid;
+}
+
+.tagEngineering {
+    color: #4a5e52;
+    border-color: #4a5e52;
+    background: transparent;
+}
+
+.tagSecurity {
+    color: #6b7280;
+    border-color: #d1d5db;
+    background: transparent;
+}
+
+.tagPriority {
+    color: #ef6b5a;
+    border-color: #ef6b5a;
+    background: transparent;
+}
+
+.tagDefault {
+    color: #6b7280;
+    border-color: #d1d5db;
+    background: transparent;
+}
+
+.addTagButton {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 2px dashed #d1d5db;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+}
+
+.addTagButton:hover {
+    border-color: #9ca3af;
+    color: #6b7280;
+}
+
+.tagInput {
+    padding: 6px 14px;
+    border: 2px solid #4a5e52;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    outline: none;
+    width: 120px;
+}
+
+/* Right Panel - Sidebar */
+.sidebar {
+    width: 220px;
+    background: #f9fafb;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    border-left: 1px solid #e5e7eb;
+}
+
+/* Timer Section */
+.timerSection {
+    text-align: center;
+}
+
+.timerLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4a5e52;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+
+.timerIcon {
+    display: flex;
+    align-items: center;
+}
+
+.timerCircle {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 6px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    position: relative;
+    background: conic-gradient(
+        #4a5e52 calc(var(--progress, 0%) * 3.6deg),
+        transparent calc(var(--progress, 0%) * 3.6deg)
+    );
+}
+
+.timerCircle::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: white;
+}
+
+.timerCircle.timerActive {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74, 94, 82, 0.2); }
+    50% { box-shadow: 0 0 0 10px rgba(74, 94, 82, 0); }
+}
+
+.timerTime {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1f2937;
+    position: relative;
+    z-index: 1;
+}
+
+.timerSubtext {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 1;
+}
+
+.timerControls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.startButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 28px;
+    background: #4a5e52;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.startButton:hover {
+    background: #3d4f44;
+}
+
+.playIcon {
+    display: flex;
+    align-items: center;
+}
+
+.resetButton {
+    padding: 10px 12px;
+    background: #e5e7eb;
+    border: none;
+    border-radius: 8px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.resetButton:hover {
+    background: #d1d5db;
+}
+
+.resetButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pauseButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 28px;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pauseButton:hover {
+    background: #d97706;
+}
+
+.startButton.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.startButton.disabled:hover {
+    background: #4a5e52;
+}
+
+.timerWarning {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #f59e0b;
+    text-align: center;
+}
+
+/* Card Accent Section */
+.accentSection {
+    text-align: center;
+}
+
+.accentLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.accentIcon {
+    display: flex;
+    align-items: center;
+}
+
+.colorPicker {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.colorOption {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.colorOption:hover {
+    transform: scale(1.1);
+}
+
+.colorOption.selected {
+    border-color: #1f2937;
+}
+
+.colorOption.selected::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Actions Section */
+.actionsSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.completeButton {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.completeButton:hover {
+    background: #e5e7eb;
+}
+
+.completeIcon {
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+}
+
+.deleteButton {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #ef6b5a;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.deleteButton:hover {
+    background: #fef2f2;
+}
+
+.deleteIcon {
+    color: #ef6b5a;
+    display: flex;
+    align-items: center;
+}
