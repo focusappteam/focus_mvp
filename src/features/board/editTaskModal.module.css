@@ -355,23 +355,35 @@
     justify-content: center;
     margin: 0 auto 12px;
     position: relative;
+    background: conic-gradient(
+        #4a5e52 calc(var(--progress, 0%) * 3.6deg),
+        transparent calc(var(--progress, 0%) * 3.6deg)
+    );
 }
 
 .timerCircle::before {
     content: '';
     position: absolute;
-    inset: -6px;
+    inset: 6px;
     border-radius: 50%;
-    border: 6px solid transparent;
-    border-top-color: #4a5e52;
-    border-right-color: #4a5e52;
-    transform: rotate(-45deg);
+    background: white;
+}
+
+.timerCircle.timerActive {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74, 94, 82, 0.2); }
+    50% { box-shadow: 0 0 0 10px rgba(74, 94, 82, 0); }
 }
 
 .timerTime {
     font-size: 32px;
     font-weight: 700;
     color: #1f2937;
+    position: relative;
+    z-index: 1;
 }
 
 .timerSubtext {
@@ -380,6 +392,8 @@
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    position: relative;
+    z-index: 1;
 }
 
 .timerControls {
@@ -427,6 +441,46 @@
 
 .resetButton:hover {
     background: #d1d5db;
+}
+
+.resetButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pauseButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 28px;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.pauseButton:hover {
+    background: #d97706;
+}
+
+.startButton.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.startButton.disabled:hover {
+    background: #4a5e52;
+}
+
+.timerWarning {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #f59e0b;
+    text-align: center;
 }
 
 /* Card Accent Section */

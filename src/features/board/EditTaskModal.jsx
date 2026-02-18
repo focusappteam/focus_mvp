@@ -1,5 +1,5 @@
 import styles from "./editTaskModal.module.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
     FolderOpen, 
     X, 
@@ -7,6 +7,7 @@ import {
     Check, 
     Brain, 
     Play, 
+    Pause,
     RotateCcw, 
     Palette, 
     CheckCheck, 
@@ -21,6 +22,8 @@ const ACCENT_COLORS = [
     "#f472b6",
     "#34d399"
 ];
+
+const POMODORO_DURATION = 25 * 60; // 25 minutes in seconds
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     const [form, setForm] = useState({
@@ -38,6 +41,140 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     const [isAddingChecklist, setIsAddingChecklist] = useState(false);
     const [newTag, setNewTag] = useState("");
     const [isAddingTag, setIsAddingTag] = useState(false);
+
+    // Timer state
+    const [timerState, setTimerState] = useState(() => {
+        const savedTimer = localStorage.getItem("globalTimer");
+        if (savedTimer) {
+            const parsed = JSON.parse(savedTimer);
+            // Calculate remaining time if timer was running
+            if (parsed.isRunning && parsed.startedAt) {
+                const elapsed = Math.floor((Date.now() - parsed.startedAt) / 1000);
+                const remaining = Math.max(0, parsed.remainingTime - elapsed);
+                return { ...parsed, remainingTime: remaining };
+            }
+            return parsed;
+        }
+        return { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+    });
+    const intervalRef = useRef(null);
+
+    // Check if this task owns the timer
+    const isThisTaskTimer = timerState.taskId === task?.id;
+    const canStartTimer = !timerState.isRunning || isThisTaskTimer;
+
+    // Timer countdown effect
+    useEffect(() => {
+        if (timerState.isRunning && isThisTaskTimer) {
+            intervalRef.current = setInterval(() => {
+                setTimerState(prev => {
+                    const newRemaining = prev.remainingTime - 1;
+                    
+                    if (newRemaining <= 0) {
+                        // Timer completed
+                        clearInterval(intervalRef.current);
+                        
+                        // Update task's timeActive
+                        const updatedTask = {
+                            ...task,
+                            timeActive: (task.timeActive || 0) + POMODORO_DURATION
+                        };
+                        onSave(updatedTask);
+                        
+                        // Reset timer state
+                        const newState = { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+                        localStorage.setItem("globalTimer", JSON.stringify(newState));
+                        
+                        // Play notification sound or alert
+                        if (Notification.permission === "granted") {
+                            new Notification("Focus Session Complete!", { body: `Great work on "${task.title}"!` });
+                        }
+                        
+                        return newState;
+                    }
+                    
+                    return { ...prev, remainingTime: newRemaining };
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
+    }, [timerState.isRunning, isThisTaskTimer, task, onSave]);
+
+    // Persist timer state to localStorage
+    useEffect(() => {
+        localStorage.setItem("globalTimer", JSON.stringify(timerState));
+    }, [timerState]);
+
+    // Request notification permission
+    useEffect(() => {
+        if (Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }, []);
+
+    function handleStartTimer() {
+        if (!canStartTimer) return;
+        
+        setTimerState(prev => ({
+            taskId: task.id,
+            remainingTime: prev.taskId === task.id ? prev.remainingTime : POMODORO_DURATION,
+            isRunning: true,
+            startedAt: Date.now()
+        }));
+    }
+
+    function handlePauseTimer() {
+        if (!isThisTaskTimer) return;
+        
+        // Calculate elapsed time to add to timeActive
+        const elapsedSinceStart = timerState.startedAt 
+            ? Math.floor((Date.now() - timerState.startedAt) / 1000)
+            : 0;
+        
+        // Update task's timeActive with the time worked so far
+        if (elapsedSinceStart > 0) {
+            const updatedTask = {
+                ...task,
+                timeActive: (task.timeActive || 0) + elapsedSinceStart
+            };
+            onSave(updatedTask);
+        }
+        
+        setTimerState(prev => ({
+            ...prev,
+            isRunning: false,
+            startedAt: null
+        }));
+    }
+
+    function handleResetTimer() {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+        
+        setTimerState({
+            taskId: null,
+            remainingTime: POMODORO_DURATION,
+            isRunning: false,
+            startedAt: null
+        });
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // Calculate progress for the timer circle
+    const timerProgress = isThisTaskTimer 
+        ? ((POMODORO_DURATION - timerState.remainingTime) / POMODORO_DURATION) * 100 
+        : 0;
 
     useEffect(() => {
         if (task) {
@@ -276,17 +413,44 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                             <Brain size={14} className={styles.timerIcon} />
                             DEEP WORK
                         </div>
-                        <div className={styles.timerCircle}>
-                            <span className={styles.timerTime}>25:00</span>
+                        <div 
+                            className={`${styles.timerCircle} ${timerState.isRunning && isThisTaskTimer ? styles.timerActive : ""}`}
+                            style={{ '--progress': `${timerProgress}%` }}
+                        >
+                            <span className={styles.timerTime}>
+                                {isThisTaskTimer ? formatTime(timerState.remainingTime) : formatTime(POMODORO_DURATION)}
+                            </span>
                             <span className={styles.timerSubtext}>FOCUS SESSION</span>
                         </div>
                         <div className={styles.timerControls}>
-                            <button className={styles.startButton}>
-                                <Play size={12} className={styles.playIcon} />
-                                Start
+                            {timerState.isRunning && isThisTaskTimer ? (
+                                <button className={styles.pauseButton} onClick={handlePauseTimer}>
+                                    <Pause size={12} className={styles.playIcon} />
+                                    Pause
+                                </button>
+                            ) : (
+                                <button 
+                                    className={`${styles.startButton} ${!canStartTimer ? styles.disabled : ""}`}
+                                    onClick={handleStartTimer}
+                                    disabled={!canStartTimer}
+                                >
+                                    <Play size={12} className={styles.playIcon} />
+                                    {isThisTaskTimer && timerState.remainingTime < POMODORO_DURATION ? "Resume" : "Start"}
+                                </button>
+                            )}
+                            <button 
+                                className={styles.resetButton} 
+                                onClick={handleResetTimer}
+                                disabled={!isThisTaskTimer && timerState.taskId !== null}
+                            >
+                                <RotateCcw size={16} />
                             </button>
-                            <button className={styles.resetButton}><RotateCcw size={16} /></button>
                         </div>
+                        {timerState.isRunning && !isThisTaskTimer && (
+                            <div className={styles.timerWarning}>
+                                Timer active on another task
+                            </div>
+                        )}
                     </div>
 
                     {/* Card Accent Section */}

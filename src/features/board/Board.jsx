@@ -133,10 +133,10 @@ function Board() {
                     onComplete={(taskId) =>
                         setTasks((prevTasks) =>
                             prevTasks.map(task =>
-                                task.id === taskId
-                                    ? { ...task, status: "completed" }
+                                task.id === taskId && task.status !== "completed"
+                                    ? { ...task, status: "completed", tags: [...(task.tags || []), "COMPLETED"] }
                                     : task
-                            ).filter(task => task.status !== "completed")
+                            )
                         )
                     }
                     task={editingTask}
