@@ -20,6 +20,7 @@ function Board() {
     const [offset, setOffset] = useState({ x: 0, y: 0 });
 
     const [toast, setToast] = useState(null);
+    const [toastVisible, setToastVisible] = useState(false); // control entry/exit animations
 
     const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
@@ -51,10 +52,18 @@ function Board() {
     }, []);
 
     function showToast(message) {
-        setToast(message);
+        // clear any pending timers so repeated calls reset the sequence
         clearTimeout(showToast.timeout);
+        clearTimeout(showToast.cleanupTimeout);
+
+        setToast(message);
+        setToastVisible(true);
+
+        // after display duration, start exit animation
         showToast.timeout = setTimeout(() => {
-            setToast(null);
+            setToastVisible(false);
+            // once animation finishes, actually clear toast content
+            showToast.cleanupTimeout = setTimeout(() => setToast(null), 200);
         }, 2000);
     }
 
@@ -94,7 +103,7 @@ function Board() {
             };
 
             if (isBehindHeader) {
-                showToast("This task can’t be placed here");
+                showToast("Esta tarea no puede ser ubicada aqui");
                 return prevTasks;
             }
 
@@ -104,7 +113,7 @@ function Board() {
             });
 
             if (hasCollision) {
-                showToast("This task can’t be placed here");
+                showToast("La tarea no puede ubicarse sobre otra");
                 return prevTasks;
             }
 
@@ -123,9 +132,15 @@ function Board() {
         if (!isEditingTask) {
             // Get click position relative to board
             const rect = e.currentTarget.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+
+            const worldX = (screenX - offset.x) / zoom;
+            const worldY = (screenY - offset.y) / zoom;
+
             setNewTaskPosition({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top
+                x: worldX,
+                y: worldY,
             });
             setIsCreatingTask(true);
         }
@@ -191,6 +206,11 @@ function Board() {
         });
     }
 
+    function resetView() {
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+    }
+
     return (
         <div
             ref={canvasRef}
@@ -209,6 +229,7 @@ function Board() {
                     x: e.clientX - offset.x,
                     y: e.clientY - offset.y,
                 };
+
             }}
 
             onMouseMove={(e) => {
@@ -261,8 +282,9 @@ function Board() {
             </div>
 
             <div className={styles.zoomControls}>
-                <button onClick={() => zoomAtCenter(1)}>+</button>
-                <button onClick={() => zoomAtCenter(-1)}>-</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1) }}>+</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1) }}>-</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); resetView() }}>restore</button>
             </div>
 
             <button
@@ -299,7 +321,10 @@ function Board() {
             )}
 
             {toast && (
-                <div className={styles.toast}>
+                <div
+                    className={`${styles.toast} ${toastVisible ? styles.toastEnter : styles.toastExit
+                        }`}
+                >
                     {toast}
                 </div>
             )}
