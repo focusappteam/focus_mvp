@@ -13,22 +13,14 @@ function Task({ task, onDoubleClick, zoom, onHoverChange }) {
     const dragX = transform ? transform.x / zoom : 0;
     const dragY = transform ? transform.y / zoom : 0;
 
-    const style = {
-        transform: `
-        translate(
-            ${x + dragX}px,
-            ${y + dragY}px
-        )
-    `,
+    const style = useMemo(() => ({
+        transform: `translate(${x + dragX}px, ${y + dragY}px)`,
         cursor: transform ? "grabbing" : "grab",
         zIndex: transform ? 1000 : "auto",
         boxShadow: transform
             ? "0 20px 40px rgba(0,0,0,0.25)"
             : undefined,
-    };
-
-
-
+    }), [x, y, dragX, dragY, transform]);
 
     return (
         <div

@@ -6,32 +6,38 @@ import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 
 function Board() {
-    const [zoom, setZoom] = useState(1);
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
     const MIN_ZOOM = 0.5;
     const MAX_ZOOM = 2;
     const ZOOM_STEP = 0.1;
+
+    const TASK_WIDTH = 260;
+    const TASK_HEIGHT = 60;
+    const HEADER_HEIGHT = 1;
+
     const canvasRef = useRef(null);
+
+    const [zoom, setZoom] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+
     const [toast, setToast] = useState(null);
 
     const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
         return savedTasks ? JSON.parse(savedTasks) : [];
     })
-    useEffect(() => {
-        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
-    })
+
     const [isCreatingTask, setIsCreatingTask] = useState(false)
     const [isEditingTask, setIsEditingTask] = useState(false)
     const [editingTask, setEditingTask] = useState(null)
-    const TASK_WIDTH = 260;
-    const TASK_HEIGHT = 60;
-    const HEADER_HEIGHT = 1;
 
     const [isPanning, setIsPanning] = useState(false);
     const panStartRef = useRef({ x: 0, y: 0 });
 
     const [isHoveringTask, setIsHoveringTask] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
+    })
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -46,8 +52,8 @@ function Board() {
 
     function showToast(message) {
         setToast(message);
-
-        setTimeout(() => {
+        clearTimeout(showToast.timeout);
+        showToast.timeout = setTimeout(() => {
             setToast(null);
         }, 2000);
     }
@@ -110,8 +116,6 @@ function Board() {
         });
     }
 
-
-
     // Store last click position for modal
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
 
@@ -156,13 +160,6 @@ function Board() {
 
             return nextZoom;
         });
-        const SNAP = 0.05;
-
-        const finalZoom =
-            Math.abs(nextZoom - 1) < SNAP ? 1 : nextZoom;
-
-        return finalZoom;
-
     }
 
     function zoomAtCenter(direction) {
@@ -219,8 +216,6 @@ function Board() {
 
                 const canvas = canvasRef.current;
                 if (!canvas) return;
-
-                const rect = canvas.getBoundingClientRect();
 
                 const nextX = e.clientX - panStartRef.current.x;
                 const nextY = e.clientY - panStartRef.current.y;
