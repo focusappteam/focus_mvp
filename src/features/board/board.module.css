@@ -1,5 +1,5 @@
 .canvas {
-    --grid-size: 33px;
+    --grid-size: 32px;
 
     position: relative;
     flex: 1;
