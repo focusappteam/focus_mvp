@@ -36,6 +36,9 @@ function Board() {
 
     const [isHoveringTask, setIsHoveringTask] = useState(false);
 
+    const [focusedTaskId, setFocusedTaskId] = useState(null);
+    const isFocusMode = focusedTaskId !== null;
+
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
     })
@@ -275,6 +278,8 @@ function Board() {
                                     setEditingTask(task);
                                     setIsEditingTask(true);
                                 }}
+                                isBlocked={isFocusMode && task.id !== focusedTaskId}
+                                isFocused={task.id === focusedTaskId}
                             />
                         ))}
                     </DndContext>
