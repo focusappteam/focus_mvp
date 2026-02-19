@@ -1,7 +1,7 @@
 import styles from "./board.module.css";
 import { useDraggable } from "@dnd-kit/core";
 
-function Task({ task, onDoubleClick, zoom, onHoverChange }) {
+function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused }) {
     const { id, title } = task;
     const { x = 0, y = 0 } = task.position || {};
 
