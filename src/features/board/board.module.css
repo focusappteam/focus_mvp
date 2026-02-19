@@ -1,11 +1,14 @@
 .canvas {
+    --grid-size: 33px;
+
     position: relative;
     flex: 1;
     overflow: auto;
     background-color: #f7f7f7;
     background-image:
         radial-gradient(circle, rgba(23, 27, 27, 0.15) 1px, transparent 1px);
-    background-size: calc(24px * var(--zoom)) calc(24px * var(--zoom));
+    background-size:
+        calc(var(--grid-size) * var(--zoom)) calc(var(--grid-size) * var(--zoom));
 }
 
 .canvas {
