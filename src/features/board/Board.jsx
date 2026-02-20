@@ -79,6 +79,43 @@ function Board() {
         );
     }
 
+    function findFreePosition(initialPosition, tasks) {
+        let testPosition = { ...initialPosition };
+        const GAP = 20;
+
+        let collision = true;
+
+        while (collision) {
+            collision = tasks.some(task =>
+                isColliding(testPosition, task.position)
+            );
+
+            if (collision) {
+                testPosition = {
+                    x: testPosition.x,
+                    y: testPosition.y + TASK_HEIGHT + GAP,
+                };
+            }
+        }
+
+        return testPosition;
+    }
+
+    function getViewportCenterWorld() {
+        const rect = canvasRef.current.getBoundingClientRect();
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const worldX = (centerX - offset.x) / zoom;
+        const worldY = (centerY - offset.y) / zoom;
+
+        return {
+            x: worldX - TASK_WIDTH / 2,
+            y: worldY - TASK_HEIGHT / 2,
+        };
+    }
+
     function handleDragEnd(event) {
         const { active, delta } = event;
 
@@ -91,9 +128,6 @@ function Board() {
 
             const rawX = (activeTask.position?.x || 0) + adjustedDeltaX;
             const rawY = (activeTask.position?.y || 0) + adjustedDeltaY;
-
-            const canvas = canvasRef.current;
-            const rect = canvas.getBoundingClientRect();
 
             const minVisibleY =
                 (HEADER_HEIGHT - offset.y) / zoom;
@@ -294,8 +328,15 @@ function Board() {
 
             <button
                 className={styles.createTaskButton}
-                onClick={() => setIsCreatingTask(true)}
-            >+</button>
+                onClick={() => {
+                    const centerPosition = getViewportCenterWorld();
+                    setNewTaskPosition(centerPosition);
+                    setIsCreatingTask(true);
+                }}
+            >
+                +
+            </button>
+
 
             <div className={styles.hint}>
                 Haga doble clic en cualquier lugar para crear una nueva tarea
@@ -305,7 +346,20 @@ function Board() {
                 <CreateTaskModal
                     onClose={() => setIsCreatingTask(false)}
                     onCreate={(newTask) =>
-                        setTasks((prevTasks) => [...prevTasks, newTask])
+                        setTasks((prevTasks) => {
+                            const freePosition = findFreePosition(
+                                newTask.position,
+                                prevTasks
+                            );
+
+                            return [
+                                ...prevTasks,
+                                {
+                                    ...newTask,
+                                    position: freePosition,
+                                },
+                            ];
+                        })
                     }
                     position={newTaskPosition}
                 />
