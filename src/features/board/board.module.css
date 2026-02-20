@@ -3,12 +3,17 @@
 
     position: relative;
     flex: 1;
-    overflow: auto;
+    overflow: hidden;
+    scrollbar-width: none;
     background-color: #f7f7f7;
     background-image:
         radial-gradient(circle, rgba(23, 27, 27, 0.15) 1px, transparent 1px);
     background-size:
         calc(var(--grid-size) * var(--zoom)) calc(var(--grid-size) * var(--zoom));
+}
+
+.canvas::-webkit-scrollbar {
+    display: none;
 }
 
 .canvas {
