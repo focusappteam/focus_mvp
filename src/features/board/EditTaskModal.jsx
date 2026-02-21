@@ -267,6 +267,11 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     function handleDelete() {
+        // Reset timer state completely before deleting task
+        const cleanTimerState = { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+        setTimerState(cleanTimerState);
+        localStorage.setItem("globalTimer", JSON.stringify(cleanTimerState));
+
         if (onDelete) {
             onDelete(task.id);
         }
