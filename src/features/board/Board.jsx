@@ -166,6 +166,10 @@ function Board() {
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
 
     function handleBoardDoubleClick(e) {
+        if (isCreatingTask || isEditingTask) {
+            e.stopPropagation();
+            return;
+        }
         if (!isEditingTask) {
             // Get click position relative to board
             const rect = e.currentTarget.getBoundingClientRect();
@@ -184,6 +188,10 @@ function Board() {
     }
 
     function handleWheel(e) {
+        if (isCreatingTask || isEditingTask) {
+            e.stopPropagation();
+            return;
+        }
         if (!e.ctrlKey) return;
 
         e.preventDefault();
@@ -256,6 +264,10 @@ function Board() {
             onDoubleClick={handleBoardDoubleClick}
             onContextMenu={(e) => e.preventDefault()}
             onMouseDown={(e) => {
+                if (isCreatingTask || isEditingTask) {
+                    e.stopPropagation();
+                    return;
+                }
                 if (e.button !== 2) return;
                 if (isHoveringTask) return;
 
@@ -270,6 +282,10 @@ function Board() {
             }}
 
             onMouseMove={(e) => {
+                if (isCreatingTask || isEditingTask) {
+                    e.stopPropagation();
+                    return;
+                }
                 if (!isPanning) return;
 
                 const canvas = canvasRef.current;
