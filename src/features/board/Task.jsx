@@ -30,7 +30,10 @@ function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused }
     return (
         <div
             ref={setNodeRef}
-            className={styles.task}
+            className={`
+                ${styles.task}
+                ${task.status === "completed" ? styles.taskCompleted : ""}
+            `}
             style={style}
             {...listeners}
             {...attributes}
