@@ -368,13 +368,14 @@ function Board() {
             {isEditingTask && editingTask && (
                 <EditTaskModal
                     onClose={() => setIsEditingTask(false)}
-                    onSave={(updatedTask) =>
+                    onSave={(updatedTask) => {
                         setTasks((prevTasks) =>
                             prevTasks.map(task =>
                                 task.id === updatedTask.id ? updatedTask : task
                             )
-                        )
-                    }
+                        );
+                        setEditingTask(prev => (prev && prev.id === updatedTask.id) ? updatedTask : prev);
+                    }}
                     onDelete={(taskId) =>
                         setTasks((prevTasks) =>
                             prevTasks.filter(task => task.id !== taskId)
