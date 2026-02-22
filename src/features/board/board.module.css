@@ -132,6 +132,19 @@
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
 }
 
+.taskCompleted {
+    background: #eef2f1;
+    color: #6b7280;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    text-decoration: line-through;
+    opacity: 0.75;
+    transition: all 0.2s ease;
+}
+
+.taskCompleted:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
 .createTaskDebug {
     position: absolute;
     top: 50%;
