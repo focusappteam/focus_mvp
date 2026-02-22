@@ -4,7 +4,8 @@ import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
-
+import FocusButton from './focus/FocusButton';      /*importe modo focus*/ 
+import FocusOverlay from './focus/FocusOverlay';
 function Board() {
     const MIN_ZOOM = 0.5;
     const MAX_ZOOM = 2;
@@ -38,6 +39,9 @@ function Board() {
 
     const [focusedTaskId, setFocusedTaskId] = useState(null);
     const isFocusMode = focusedTaskId !== null;
+    const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
+    const globalTimer = JSON.parse(localStorage.getItem("globalTimer") || "{}");     /* Agrege el timer global*/ 
+    const activeTask = tasks.find(t => t.id === globalTimer.taskId) ?? null;
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
@@ -336,7 +340,10 @@ function Board() {
             >
                 +
             </button>
-
+            <FocusButton
+                activeTask={activeTask}
+                onEnterFocus={() => setIsFocusOverlayOpen(true)}    /*agregeue boton focus  */
+            />
 
             <div className={styles.hint}>
                 Haga doble clic en cualquier lugar para crear una nueva tarea
@@ -400,6 +407,21 @@ function Board() {
                 >
                     {toast}
                 </div>
+            )}
+            {isFocusOverlayOpen && activeTask && (
+                <FocusOverlay
+                    activeTask={activeTask}
+                    onExit={() => setIsFocusOverlayOpen(false)}    /*agregue el Overlay*/ 
+                    onCompleteTask={(taskId) => {
+                        setTasks(prev => prev.map(t =>
+                            t.id === taskId
+                                ? { ...t, status: 'completed', tags: [...(t.tags || []), 'COMPLETED'] }
+                                : t
+                        ));
+                        setFocusedTaskId(null);
+                        setIsFocusOverlayOpen(false);
+                    }}
+                />
             )}
         </div>
     );
