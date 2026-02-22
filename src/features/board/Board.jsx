@@ -36,7 +36,14 @@ function Board() {
 
     const [isHoveringTask, setIsHoveringTask] = useState(false);
 
-    const [focusedTaskId, setFocusedTaskId] = useState(null);
+    const [focusedTaskId, setFocusedTaskId] = useState(() => {
+    const saved = localStorage.getItem("globalTimer");
+    if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.isRunning && parsed.taskId) return parsed.taskId;
+    }
+    return null;
+});
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {
@@ -53,6 +60,29 @@ function Board() {
             canvas.removeEventListener("wheel", handleWheel);
         };
     }, []);
+
+    useEffect(() => {
+    function syncFocusFromTimer() {
+        const saved = localStorage.getItem("globalTimer");
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed.isRunning && parsed.taskId) {
+                setFocusedTaskId(parsed.taskId);
+            } else {
+                setFocusedTaskId(null);
+            }
+        }
+    }
+
+    window.addEventListener("storage", syncFocusFromTimer);
+
+    const interval = setInterval(syncFocusFromTimer, 1000);
+
+    return () => {
+        window.removeEventListener("storage", syncFocusFromTimer);
+        clearInterval(interval);
+    };
+}, []);
 
     function showToast(message) {
         // clear any pending timers so repeated calls reset the sequence
@@ -166,6 +196,7 @@ function Board() {
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
 
     function handleBoardDoubleClick(e) {
+        if (isFocusMode) return;
         if (!isEditingTask) {
             // Get click position relative to board
             const rect = e.currentTarget.getBoundingClientRect();
@@ -328,7 +359,9 @@ function Board() {
 
             <button
                 className={styles.createTaskButton}
+                disabled={isFocusMode}
                 onClick={() => {
+                    if (isFocusMode) return;
                     const centerPosition = getViewportCenterWorld();
                     setNewTaskPosition(centerPosition);
                     setIsCreatingTask(true);
