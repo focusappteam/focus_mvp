@@ -196,6 +196,10 @@ function Board() {
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
 
     function handleBoardDoubleClick(e) {
+        if (isCreatingTask || isEditingTask) {
+            e.stopPropagation();
+            return;
+        }
         if (isFocusMode) return;
         if (!isEditingTask) {
             // Get click position relative to board
@@ -215,6 +219,10 @@ function Board() {
     }
 
     function handleWheel(e) {
+        if (isCreatingTask || isEditingTask) {
+            e.stopPropagation();
+            return;
+        }
         if (!e.ctrlKey) return;
 
         e.preventDefault();
@@ -287,6 +295,10 @@ function Board() {
             onDoubleClick={handleBoardDoubleClick}
             onContextMenu={(e) => e.preventDefault()}
             onMouseDown={(e) => {
+                if (isCreatingTask || isEditingTask) {
+                    e.stopPropagation();
+                    return;
+                }
                 if (e.button !== 2) return;
                 if (isHoveringTask) return;
 
@@ -301,6 +313,10 @@ function Board() {
             }}
 
             onMouseMove={(e) => {
+                if (isCreatingTask || isEditingTask) {
+                    e.stopPropagation();
+                    return;
+                }
                 if (!isPanning) return;
 
                 const canvas = canvasRef.current;
@@ -401,13 +417,14 @@ function Board() {
             {isEditingTask && editingTask && (
                 <EditTaskModal
                     onClose={() => setIsEditingTask(false)}
-                    onSave={(updatedTask) =>
+                    onSave={(updatedTask) => {
                         setTasks((prevTasks) =>
                             prevTasks.map(task =>
                                 task.id === updatedTask.id ? updatedTask : task
                             )
-                        )
-                    }
+                        );
+                        setEditingTask(prev => (prev && prev.id === updatedTask.id) ? updatedTask : prev);
+                    }}
                     onDelete={(taskId) =>
                         setTasks((prevTasks) =>
                             prevTasks.filter(task => task.id !== taskId)

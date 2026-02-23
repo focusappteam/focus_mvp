@@ -1,16 +1,16 @@
 import styles from "./editTaskModal.module.css";
 import { useState, useEffect, useRef } from "react";
-import { 
-    FolderOpen, 
-    X, 
-    CheckSquare, 
-    Check, 
-    Brain, 
-    Play, 
+import {
+    FolderOpen,
+    X,
+    CheckSquare,
+    Check,
+    Brain,
+    Play,
     Pause,
-    RotateCcw, 
-    Palette, 
-    CheckCheck, 
+    RotateCcw,
+    Palette,
+    CheckCheck,
     Trash2,
     Plus
 } from "lucide-react";
@@ -23,7 +23,7 @@ const ACCENT_COLORS = [
     "#34d399"
 ];
 
-const POMODORO_DURATION = 25 * 60; // 25 minutes in seconds
+const POMODORO_DURATION = 1500; // 25 minutes in seconds
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     const [form, setForm] = useState({
@@ -57,6 +57,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
         }
         return { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
     });
+
     const intervalRef = useRef(null);
 
     // Check if this task owns the timer
@@ -69,30 +70,30 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
             intervalRef.current = setInterval(() => {
                 setTimerState(prev => {
                     const newRemaining = prev.remainingTime - 1;
-                    
+
                     if (newRemaining <= 0) {
                         // Timer completed
                         clearInterval(intervalRef.current);
-                        
+
                         // Update task's timeActive
                         const updatedTask = {
                             ...task,
                             timeActive: (task.timeActive || 0) + POMODORO_DURATION
                         };
                         onSave(updatedTask);
-                        
+
                         // Reset timer state
                         const newState = { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
                         localStorage.setItem("globalTimer", JSON.stringify(newState));
-                        
+
                         // Play notification sound or alert
                         if (Notification.permission === "granted") {
                             new Notification("Focus Session Complete!", { body: `Great work on "${task.title}"!` });
                         }
-                        
+
                         return newState;
                     }
-                    
+
                     return { ...prev, remainingTime: newRemaining };
                 });
             }, 1000);
@@ -119,7 +120,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
     function handleStartTimer() {
         if (!canStartTimer) return;
-        
+
         setTimerState(prev => ({
             taskId: task.id,
             remainingTime: prev.taskId === task.id ? prev.remainingTime : POMODORO_DURATION,
@@ -130,12 +131,12 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
     function handlePauseTimer() {
         if (!isThisTaskTimer) return;
-        
+
         // Calculate elapsed time to add to timeActive
-        const elapsedSinceStart = timerState.startedAt 
+        const elapsedSinceStart = timerState.startedAt
             ? Math.floor((Date.now() - timerState.startedAt) / 1000)
             : 0;
-        
+
         // Update task's timeActive with the time worked so far
         if (elapsedSinceStart > 0) {
             const updatedTask = {
@@ -144,7 +145,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
             };
             onSave(updatedTask);
         }
-        
+
         setTimerState(prev => ({
             ...prev,
             isRunning: false,
@@ -156,7 +157,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
         }
-        
+
         setTimerState({
             taskId: null,
             remainingTime: POMODORO_DURATION,
@@ -172,8 +173,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     // Calculate progress for the timer circle
-    const timerProgress = isThisTaskTimer 
-        ? ((POMODORO_DURATION - timerState.remainingTime) / POMODORO_DURATION) * 100 
+    const timerProgress = isThisTaskTimer
+        ? ((POMODORO_DURATION - timerState.remainingTime) / POMODORO_DURATION) * 100
         : 0;
 
     useEffect(() => {
@@ -266,28 +267,21 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     function handleDelete() {
+        // Reset timer state completely before deleting task
+        const cleanTimerState = { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+        setTimerState(cleanTimerState);
+        localStorage.setItem("globalTimer", JSON.stringify(cleanTimerState));
+
         if (onDelete) {
             onDelete(task.id);
         }
         onClose();
     }
 
-    function getTagStyle(tag) {
-        const upperTag = tag.toUpperCase();
-        if (upperTag.includes("ENGINEERING") || upperTag.includes("DEV")) {
-            return styles.tagEngineering;
-        } else if (upperTag.includes("SECURITY")) {
-            return styles.tagSecurity;
-        } else if (upperTag.includes("PRIORITY") || upperTag.includes("HIGH") || upperTag.includes("URGENT")) {
-            return styles.tagPriority;
-        }
-        return styles.tagDefault;
-    }
-
     function formatDate(dateString) {
         if (!dateString) return "";
         const date = new Date(dateString);
-        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
     }
 
     return (
@@ -306,7 +300,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                     </div>
 
                     <h1 className={styles.title}>{form.title}</h1>
-                    
+
                     <div className={styles.meta}>
                         Created: {formatDate(form.createdAt)} • <span className={styles.priority}>Priority: {form.priority}</span>
                     </div>
@@ -323,8 +317,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                         </div>
                         <div className={styles.checklistItems}>
                             {form.checklist.map((item, index) => (
-                                <div 
-                                    key={index} 
+                                <div
+                                    key={index}
                                     className={`${styles.checklistItem} ${item.checked ? styles.checked : ""}`}
                                     onClick={() => handleChecklistToggle(index)}
                                 >
@@ -332,7 +326,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                         {item.checked && <Check size={12} className={styles.checkmark} />}
                                     </div>
                                     <span className={styles.checklistText}>{item.text}</span>
-                                    <button 
+                                    <button
                                         className={styles.removeChecklistItem}
                                         onClick={(e) => handleRemoveChecklistItem(index, e)}
                                     >
@@ -340,7 +334,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                     </button>
                                 </div>
                             ))}
-                            
+
                             {isAddingChecklist ? (
                                 <div className={styles.checklistItem}>
                                     <div className={styles.checkbox}></div>
@@ -360,7 +354,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                     />
                                 </div>
                             ) : (
-                                <div 
+                                <div
                                     className={styles.addChecklistItem}
                                     onClick={() => setIsAddingChecklist(true)}
                                 >
@@ -374,11 +368,11 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                     {/* Tags Section */}
                     <div className={styles.tagsSection}>
                         {form.tags.map((tag, index) => (
-                            <span key={index} className={`${styles.tag} ${getTagStyle(tag)}`}>
+                            <span key={index} className={`${styles.tag}`}>
                                 #{tag}
                             </span>
                         ))}
-                        
+
                         {isAddingTag ? (
                             <input
                                 type="text"
@@ -395,7 +389,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                 autoFocus
                             />
                         ) : (
-                            <button 
+                            <button
                                 className={styles.addTagButton}
                                 onClick={() => setIsAddingTag(true)}
                             >
@@ -413,7 +407,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                             <Brain size={14} className={styles.timerIcon} />
                             DEEP WORK
                         </div>
-                        <div 
+                        <div
                             className={`${styles.timerCircle} ${timerState.isRunning && isThisTaskTimer ? styles.timerActive : ""}`}
                             style={{ '--progress': `${timerProgress}%` }}
                         >
@@ -429,7 +423,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                     Pause
                                 </button>
                             ) : (
-                                <button 
+                                <button
                                     className={`${styles.startButton} ${!canStartTimer ? styles.disabled : ""}`}
                                     onClick={handleStartTimer}
                                     disabled={!canStartTimer}
@@ -438,8 +432,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                     {isThisTaskTimer && timerState.remainingTime < POMODORO_DURATION ? "Resume" : "Start"}
                                 </button>
                             )}
-                            <button 
-                                className={styles.resetButton} 
+                            <button
+                                className={styles.resetButton}
                                 onClick={handleResetTimer}
                                 disabled={!isThisTaskTimer && timerState.taskId !== null}
                             >
