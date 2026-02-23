@@ -1,6 +1,15 @@
 import styles from "./layout.module.css";
+import { useTimer } from "../../contexts/TimerContext";
 
 function Header() {
+    const { state } = useTimer();
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
     return (
         <header className={styles.header}>
             <div className={styles.logo}>
@@ -9,7 +18,7 @@ function Header() {
             </div>
 
             <div className={styles.headerCenter}>
-                <div className={styles.timerBadge}>25:00</div>
+                <div className={styles.timerBadge}>{formatTime(state.remainingTime)}</div>
                 <div className={styles.focusBadge}>FOCUS</div>
             </div>
 

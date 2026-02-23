@@ -1,5 +1,5 @@
 import styles from "./editTaskModal.module.css";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
     FolderOpen,
     X,
@@ -14,6 +14,7 @@ import {
     Trash2,
     Plus
 } from "lucide-react";
+import { useTimer } from "../../contexts/TimerContext";
 
 const ACCENT_COLORS = [
     "#4a5e52",
@@ -23,7 +24,7 @@ const ACCENT_COLORS = [
     "#34d399"
 ];
 
-const POMODORO_DURATION = 1500; // 25 minutes in seconds
+// duration now comes from context
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     const [form, setForm] = useState({
@@ -42,76 +43,13 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     const [newTag, setNewTag] = useState("");
     const [isAddingTag, setIsAddingTag] = useState(false);
 
-    // Timer state
-    const [timerState, setTimerState] = useState(() => {
-        const savedTimer = localStorage.getItem("globalTimer");
-        if (savedTimer) {
-            const parsed = JSON.parse(savedTimer);
-            // Calculate remaining time if timer was running
-            if (parsed.isRunning && parsed.startedAt) {
-                const elapsed = Math.floor((Date.now() - parsed.startedAt) / 1000);
-                const remaining = Math.max(0, parsed.remainingTime - elapsed);
-                return { ...parsed, remainingTime: remaining };
-            }
-            return parsed;
-        }
-        return { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
-    });
+    // Timer state is stored in a global context
+    const { state: timerState, start, pause, reset, POMODORO_DURATION } = useTimer();
 
-    const intervalRef = useRef(null);
-
-    // Check if this task owns the timer
+    // Check if this task owns the timer and whether we can start
     const isThisTaskTimer = timerState.taskId === task?.id;
     const canStartTimer = !timerState.isRunning || isThisTaskTimer;
 
-    // Timer countdown effect
-    useEffect(() => {
-        if (timerState.isRunning && isThisTaskTimer) {
-            intervalRef.current = setInterval(() => {
-                setTimerState(prev => {
-                    const newRemaining = prev.remainingTime - 1;
-
-                    if (newRemaining <= 0) {
-                        // Timer completed
-                        clearInterval(intervalRef.current);
-
-                        // Update task's timeActive
-                        const updatedTask = {
-                            ...task,
-                            timeActive: (task.timeActive || 0) + POMODORO_DURATION
-                        };
-                        onSave(updatedTask);
-
-                        // Reset timer state
-                        const newState = { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
-                        localStorage.setItem("globalTimer", JSON.stringify(newState));
-
-                        // Play notification sound or alert
-                        if (Notification.permission === "granted") {
-                            new Notification("Focus Session Complete!", { body: `Great work on "${task.title}"!` });
-                        }
-
-                        return newState;
-                    }
-
-                    return { ...prev, remainingTime: newRemaining };
-                });
-            }, 1000);
-        }
-
-        return () => {
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-            }
-        };
-    }, [timerState.isRunning, isThisTaskTimer, task, onSave]);
-
-    // Persist timer state to localStorage
-    useEffect(() => {
-        localStorage.setItem("globalTimer", JSON.stringify(timerState));
-    }, [timerState]);
-
-    // Request notification permission
     useEffect(() => {
         if (Notification.permission === "default") {
             Notification.requestPermission();
@@ -121,23 +59,23 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     function handleStartTimer() {
         if (!canStartTimer) return;
 
-        setTimerState(prev => ({
-            taskId: task.id,
-            remainingTime: prev.taskId === task.id ? prev.remainingTime : POMODORO_DURATION,
-            isRunning: true,
-            startedAt: Date.now()
-        }));
+        start(task.id, () => {
+            // timer finished callback
+            const updatedTask = {
+                ...task,
+                timeActive: (task.timeActive || 0) + POMODORO_DURATION
+            };
+            onSave(updatedTask);
+        }, task.title);
     }
 
     function handlePauseTimer() {
         if (!isThisTaskTimer) return;
 
-        // Calculate elapsed time to add to timeActive
         const elapsedSinceStart = timerState.startedAt
             ? Math.floor((Date.now() - timerState.startedAt) / 1000)
             : 0;
 
-        // Update task's timeActive with the time worked so far
         if (elapsedSinceStart > 0) {
             const updatedTask = {
                 ...task,
@@ -146,24 +84,11 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
             onSave(updatedTask);
         }
 
-        setTimerState(prev => ({
-            ...prev,
-            isRunning: false,
-            startedAt: null
-        }));
+        pause();
     }
 
     function handleResetTimer() {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-        }
-
-        setTimerState({
-            taskId: null,
-            remainingTime: POMODORO_DURATION,
-            isRunning: false,
-            startedAt: null
-        });
+        reset();
     }
 
     function formatTime(seconds) {
@@ -267,10 +192,10 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     function handleDelete() {
-        // Reset timer state completely before deleting task
-        const cleanTimerState = { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
-        setTimerState(cleanTimerState);
-        localStorage.setItem("globalTimer", JSON.stringify(cleanTimerState));
+        // clear any timer (especially if it's running for this task)
+        if (isThisTaskTimer) {
+            reset();
+        }
 
         if (onDelete) {
             onDelete(task.id);

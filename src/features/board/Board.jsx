@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTimer } from "../../contexts/TimerContext";
 import styles from "./board.module.css"
 import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
@@ -36,19 +37,14 @@ function Board() {
 
     const [isHoveringTask, setIsHoveringTask] = useState(false);
 
-    const [focusedTaskId, setFocusedTaskId] = useState(() => {
-    const saved = localStorage.getItem("globalTimer");
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.isRunning && parsed.taskId) return parsed.taskId;
-    }
-    return null;
-});
+    // determine which task is currently in focus based on global timer
+    const { state: timerState } = useTimer();
+    const focusedTaskId = timerState.isRunning ? timerState.taskId : null;
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {
-        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
-    })
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }, [tasks]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -60,29 +56,6 @@ function Board() {
             canvas.removeEventListener("wheel", handleWheel);
         };
     }, []);
-
-    useEffect(() => {
-    function syncFocusFromTimer() {
-        const saved = localStorage.getItem("globalTimer");
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.isRunning && parsed.taskId) {
-                setFocusedTaskId(parsed.taskId);
-            } else {
-                setFocusedTaskId(null);
-            }
-        }
-    }
-
-    window.addEventListener("storage", syncFocusFromTimer);
-
-    const interval = setInterval(syncFocusFromTimer, 1000);
-
-    return () => {
-        window.removeEventListener("storage", syncFocusFromTimer);
-        clearInterval(interval);
-    };
-}, []);
 
     function showToast(message) {
         // clear any pending timers so repeated calls reset the sequence
