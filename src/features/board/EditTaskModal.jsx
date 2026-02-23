@@ -185,6 +185,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     function handleComplete() {
+        handlePauseTimer();
         if (onComplete) {
             onComplete(task.id);
         }
@@ -213,7 +214,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
         <div className={styles.overlay} onClick={handleClose}>
             <div className={styles.modal} onClick={e => e.stopPropagation()}>
                 {/* Left Panel - Main Content */}
-                <div className={styles.mainContent}>
+                <div inert={task.status === "completed"} className={styles.mainContent}>
                     <div className={styles.header}>
                         <div className={styles.category}>
                             <FolderOpen size={14} className={styles.categoryIcon} />
@@ -343,7 +344,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                         </div>
                         <div className={styles.timerControls}>
                             {timerState.isRunning && isThisTaskTimer ? (
-                                <button className={styles.pauseButton} onClick={handlePauseTimer}>
+                                <button className={styles.pauseButton} onClick={handlePauseTimer} >
                                     <Pause size={12} className={styles.playIcon} />
                                     Pause
                                 </button>
@@ -351,7 +352,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                 <button
                                     className={`${styles.startButton} ${!canStartTimer ? styles.disabled : ""}`}
                                     onClick={handleStartTimer}
-                                    disabled={!canStartTimer}
+                                    disabled={!canStartTimer || task.status === "completed"}
                                 >
                                     <Play size={12} className={styles.playIcon} />
                                     {isThisTaskTimer && timerState.remainingTime < POMODORO_DURATION ? "Resume" : "Start"}
@@ -360,7 +361,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                             <button
                                 className={styles.resetButton}
                                 onClick={handleResetTimer}
-                                disabled={!isThisTaskTimer && timerState.taskId !== null}
+                                disabled={(!isThisTaskTimer && timerState.taskId !== null) || task.status === "completed"}
                             >
                                 <RotateCcw size={16} />
                             </button>

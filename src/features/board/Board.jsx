@@ -5,6 +5,7 @@ import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
+import { RotateCcw, Plus, Minus } from "lucide-react"
 
 function Board() {
     const MIN_ZOOM = 0.5;
@@ -341,9 +342,9 @@ function Board() {
             </div>
 
             <div className={styles.zoomControls}>
-                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1) }}>+</button>
-                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1) }}>-</button>
-                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); resetView() }}>restore</button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1) }}><Minus size={14} /></button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1) }}> <Plus size={14} /> </button>
+                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); resetView() }}><RotateCcw size={14} /></button>
             </div>
 
             <button
