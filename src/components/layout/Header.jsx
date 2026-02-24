@@ -2,13 +2,17 @@ import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 
 function Header() {
-    const { state } = useTimer();
+    const { state, POMODORO_DURATION } = useTimer();
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
+
+    const currentTimer = state.taskId && state.timers[state.taskId]
+        ? state.timers[state.taskId].remainingTime
+        : POMODORO_DURATION;
 
     return (
         <header className={styles.header}>
@@ -18,7 +22,7 @@ function Header() {
             </div>
 
             <div className={styles.headerCenter}>
-                <div className={styles.timerBadge}>{formatTime(state.remainingTime)}</div>
+                <div className={styles.timerBadge}>{formatTime(currentTimer)}</div>
                 <div className={styles.focusBadge}>FOCUS</div>
             </div>
 

@@ -40,7 +40,7 @@ function Board() {
 
     // determine which task is currently in focus based on global timer
     const { state: timerState } = useTimer();
-    const focusedTaskId = timerState.isRunning ? timerState.taskId : null;
+    const focusedTaskId = timerState.taskId && timerState.timers[timerState.taskId]?.isRunning ? timerState.taskId : null;
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {

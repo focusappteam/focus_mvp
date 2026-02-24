@@ -48,7 +48,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
     // Check if this task owns the timer and whether we can start
     const isThisTaskTimer = timerState.taskId === task?.id;
-    const canStartTimer = !timerState.isRunning || isThisTaskTimer;
+    const isThisTaskRunning = isThisTaskTimer && timerState.timers[task?.id]?.isRunning;
+    const canStartTimer = !isThisTaskRunning || isThisTaskTimer;
 
     useEffect(() => {
         if (Notification.permission === "default") {
@@ -72,8 +73,9 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     function handlePauseTimer() {
         if (!isThisTaskTimer) return;
 
-        const elapsedSinceStart = timerState.startedAt
-            ? Math.floor((Date.now() - timerState.startedAt) / 1000)
+        const taskTimer = timerState.timers[task?.id];
+        const elapsedSinceStart = taskTimer?.startedAt
+            ? Math.floor((Date.now() - taskTimer.startedAt) / 1000)
             : 0;
 
         if (elapsedSinceStart > 0) {
@@ -98,8 +100,9 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     // Calculate progress for the timer circle
-    const timerProgress = isThisTaskTimer
-        ? ((POMODORO_DURATION - timerState.remainingTime) / POMODORO_DURATION) * 100
+    const currentTaskTimer = timerState.timers[task?.id];
+    const timerProgress = isThisTaskTimer && currentTaskTimer
+        ? ((POMODORO_DURATION - currentTaskTimer.remainingTime) / POMODORO_DURATION) * 100
         : 0;
 
     useEffect(() => {
@@ -334,16 +337,16 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                             DEEP WORK
                         </div>
                         <div
-                            className={`${styles.timerCircle} ${timerState.isRunning && isThisTaskTimer ? styles.timerActive : ""}`}
+                            className={`${styles.timerCircle} ${isThisTaskRunning ? styles.timerActive : ""}`}
                             style={{ '--progress': `${timerProgress}%` }}
                         >
                             <span className={styles.timerTime}>
-                                {isThisTaskTimer ? formatTime(timerState.remainingTime) : formatTime(POMODORO_DURATION)}
+                                {isThisTaskTimer && timerState.timers[task?.id] ? formatTime(timerState.timers[task?.id].remainingTime) : formatTime(POMODORO_DURATION)}
                             </span>
                             <span className={styles.timerSubtext}>FOCUS SESSION</span>
                         </div>
                         <div className={styles.timerControls}>
-                            {timerState.isRunning && isThisTaskTimer ? (
+                            {isThisTaskRunning ? (
                                 <button className={styles.pauseButton} onClick={handlePauseTimer} >
                                     <Pause size={12} className={styles.playIcon} />
                                     Pause
@@ -355,7 +358,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                     disabled={!canStartTimer || task.status === "completed"}
                                 >
                                     <Play size={12} className={styles.playIcon} />
-                                    {isThisTaskTimer && timerState.remainingTime < POMODORO_DURATION ? "Resume" : "Start"}
+                                    {isThisTaskTimer && timerState.timers[task?.id]?.remainingTime < POMODORO_DURATION ? "Resume" : "Start"}
                                 </button>
                             )}
                             <button
@@ -366,7 +369,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                 <RotateCcw size={16} />
                             </button>
                         </div>
-                        {timerState.isRunning && !isThisTaskTimer && (
+                        {timerState.taskId && timerState.timers[timerState.taskId]?.isRunning && !isThisTaskTimer && (
                             <div className={styles.timerWarning}>
                                 Timer active on another task
                             </div>

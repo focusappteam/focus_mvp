@@ -5,17 +5,29 @@ const TimerContext = createContext(null);
 
 export function TimerProvider({ children }) {
   const [state, setState] = useState(() => {
-    const saved = localStorage.getItem("globalTimer");
+    const saved = localStorage.getItem("timerState");
     if (saved) {
-      const p = JSON.parse(saved);
-      if (p.isRunning && p.startedAt) {
-        const elapsed = Math.floor((Date.now() - p.startedAt) / 1000);
-        const remaining = Math.max(0, p.remainingTime - elapsed);
-        return { ...p, remainingTime: remaining };
+      try {
+        const p = JSON.parse(saved);
+        const now = Date.now();
+        if (p.timers) {
+          Object.values(p.timers).forEach(timer => {
+            if (timer.isRunning && timer.startedAt) {
+              const elapsed = Math.floor((now - timer.startedAt) / 1000);
+              timer.remainingTime = Math.max(0, timer.remainingTime - elapsed);
+              if (timer.remainingTime === 0) {
+                timer.isRunning = false;
+                timer.startedAt = null;
+              }
+            }
+          });
+        }
+        return p;
+      } catch {
+        //
       }
-      return p;
     }
-    return { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+    return { taskId: null, timers: {} };
   });
 
   const intervalRef = useRef(null);
@@ -23,41 +35,57 @@ export function TimerProvider({ children }) {
 
   // persist
   useEffect(() => {
-    localStorage.setItem("globalTimer", JSON.stringify(state));
+    localStorage.setItem("timerState", JSON.stringify(state));
   }, [state]);
 
   // countdown
+  const active = state.taskId && state.timers[state.taskId]?.isRunning;
   useEffect(() => {
-    if (state.isRunning) {
+    if (active) {
       intervalRef.current = setInterval(() => {
         setState(prev => {
-          const rem = prev.remainingTime - 1;
+          const id = prev.taskId;
+          if (!id) return prev;
+          const timer = prev.timers[id];
+          if (!timer || !timer.isRunning) return prev;
+          const rem = timer.remainingTime - 1;
           if (rem <= 0) {
             clearInterval(intervalRef.current);
-            // notify listener if exists
-            const cb = listenersRef.current[prev.taskId];
+            const cb = listenersRef.current[id];
             let title;
             if (listenersRef.current.__title) {
-              title = listenersRef.current.__title[prev.taskId];
+              title = listenersRef.current.__title[id];
             }
             if (cb) {
-              try { cb(); } catch {};
-              delete listenersRef.current[prev.taskId];
+              try { cb(); } catch { }
+              delete listenersRef.current[id];
             }
             if (title) {
-              delete listenersRef.current.__title[prev.taskId];
+              delete listenersRef.current.__title[id];
             }
             if (Notification.permission === "granted") {
               new Notification("Focus Session Complete!", { body: title || "" });
             }
-            return { taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+            return {
+              taskId: null,
+              timers: {
+                ...prev.timers,
+                [id]: { remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null }
+              }
+            };
           }
-          return { ...prev, remainingTime: rem };
+          return {
+            ...prev,
+            timers: {
+              ...prev.timers,
+              [id]: { ...timer, remainingTime: rem }
+            }
+          };
         });
       }, 1000);
     }
     return () => clearInterval(intervalRef.current);
-  }, [state.isRunning]);
+  }, [active, state.taskId]);
 
   const start = (taskId, onComplete, taskTitle) => {
     if (onComplete) {
@@ -65,22 +93,69 @@ export function TimerProvider({ children }) {
     }
     if (taskTitle) {
       listenersRef.current.__title = listenersRef.current.__title || {};
-      listenersRef.current.__title[taskId] = `Great work on "${taskTitle}"!`;
+      listenersRef.current.__title[taskId] = `Buen trabajo en "${taskTitle}"!`;
     }
-    setState(prev => ({
-      taskId,
-      remainingTime: prev.taskId === taskId ? prev.remainingTime : POMODORO_DURATION,
-      isRunning: true,
-      startedAt: Date.now()
-    }));
+    setState(prev => {
+      const now = Date.now();
+      const newTimers = { ...prev.timers };
+
+      // pause other running timers and save elapsed time
+      Object.keys(newTimers).forEach(id => {
+        if (id !== taskId && newTimers[id].isRunning) {
+          const t = newTimers[id];
+          const elapsed = t.startedAt ? Math.floor((now - t.startedAt) / 1000) : 0;
+          newTimers[id] = {
+            ...t,
+            isRunning: false,
+            startedAt: null,
+            remainingTime: Math.max(0, t.remainingTime - elapsed)
+          };
+        }
+      });
+
+      const existing = newTimers[taskId] || { remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null };
+      return {
+        taskId,
+        timers: {
+          ...newTimers,
+          [taskId]: { ...existing, isRunning: true, startedAt: now }
+        }
+      };
+    });
   };
 
   const pause = () => {
-    setState(s => ({ ...s, isRunning: false, startedAt: null }));
+    setState(prev => {
+      const id = prev.taskId;
+      if (!id) return prev;
+      const timer = prev.timers[id];
+      if (!timer || !timer.isRunning) return prev;
+      return {
+        ...prev,
+        timers: {
+          ...prev.timers,
+          [id]: {
+            ...timer,
+            isRunning: false,
+            startedAt: null
+          }
+        }
+      };
+    });
   };
 
   const reset = () => {
-    setState({ taskId: null, remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null });
+    setState(prev => {
+      const id = prev.taskId;
+      if (!id) return { taskId: null, timers: {} };
+      return {
+        taskId: null,
+        timers: {
+          ...prev.timers,
+          [id]: { remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null }
+        }
+      };
+    });
     listenersRef.current = {};
   };
 
