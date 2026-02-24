@@ -10,8 +10,11 @@ function Header() {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const currentTimer = state.taskId && state.timers[state.taskId]
-        ? state.timers[state.taskId].remainingTime
+    const activeTimer = state.taskId && state.timers[state.taskId];
+    const isStopwatch = activeTimer?.mode === 'stopwatch';
+    
+    const currentTime = activeTimer
+        ? (isStopwatch ? activeTimer.elapsedTime || 0 : activeTimer.remainingTime)
         : POMODORO_DURATION;
 
     return (
@@ -22,8 +25,8 @@ function Header() {
             </div>
 
             <div className={styles.headerCenter}>
-                <div className={styles.timerBadge}>{formatTime(currentTimer)}</div>
-                <div className={styles.focusBadge}>FOCUS</div>
+                <div className={styles.timerBadge}>{formatTime(currentTime)}</div>
+                <div className={styles.focusBadge}>{isStopwatch ? 'STOPWATCH' : 'FOCUS'}</div>
             </div>
 
             <input

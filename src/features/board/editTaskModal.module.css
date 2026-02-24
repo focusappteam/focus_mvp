@@ -1,3 +1,6 @@
+*{
+    font-family: 'Manrope', sans-serif;
+}
 .overlay {
     position: fixed;
     inset: 0;
@@ -481,6 +484,55 @@
     font-size: 11px;
     color: #f59e0b;
     text-align: center;
+}
+
+/* Mode Toggle Container */
+.modeToggleContainer {
+    display: flex;
+    background: #e5e7eb;
+    border-radius: 10px;
+    padding: 4px;
+    margin-top: 16px;
+    gap: 4px;
+    
+}
+
+.modeToggleContainer.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.modeOption {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 8px;
+    border: none;
+    border-radius: 8px;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: #6b7280;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.modeOption:hover:not(.active):not(:disabled) {
+    color: #4b5563;
+}
+
+.modeOption.active {
+    background: #4a5e52;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.modeOption:disabled {
+    cursor: not-allowed;
 }
 
 /* Card Accent Section */

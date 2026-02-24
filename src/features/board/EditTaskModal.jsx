@@ -12,7 +12,9 @@ import {
     Palette,
     CheckCheck,
     Trash2,
-    Plus
+    Plus,
+    Timer,
+    Clock
 } from "lucide-react";
 import { useTimer } from "../../contexts/TimerContext";
 
@@ -44,12 +46,16 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     const [isAddingTag, setIsAddingTag] = useState(false);
 
     // Timer state is stored in a global context
-    const { state: timerState, start, pause, reset, POMODORO_DURATION } = useTimer();
+    const { state: timerState, start, pause, reset, toggleMode, POMODORO_DURATION } = useTimer();
 
     // Check if this task owns the timer and whether we can start
     const isThisTaskTimer = timerState.taskId === task?.id;
     const isThisTaskRunning = isThisTaskTimer && timerState.timers[task?.id]?.isRunning;
     const canStartTimer = !isThisTaskRunning || isThisTaskTimer;
+    
+    // Get current mode for this task (default to 'timer')
+    const currentMode = timerState.timers[task?.id]?.mode || 'timer';
+    const isStopwatch = currentMode === 'stopwatch';
 
     useEffect(() => {
         if (Notification.permission === "default") {
@@ -101,9 +107,27 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
     // Calculate progress for the timer circle
     const currentTaskTimer = timerState.timers[task?.id];
-    const timerProgress = isThisTaskTimer && currentTaskTimer
-        ? ((POMODORO_DURATION - currentTaskTimer.remainingTime) / POMODORO_DURATION) * 100
+    const timerProgress = currentTaskTimer
+        ? isStopwatch
+            ? Math.min((currentTaskTimer.elapsedTime || 0) / POMODORO_DURATION * 100, 100)
+            : ((POMODORO_DURATION - currentTaskTimer.remainingTime) / POMODORO_DURATION) * 100
         : 0;
+
+    // Get display time based on mode - show stored time if available
+    const getDisplayTime = () => {
+        if (currentTaskTimer) {
+            if (isStopwatch) {
+                return formatTime(currentTaskTimer.elapsedTime || 0);
+            }
+            return formatTime(currentTaskTimer.remainingTime ?? POMODORO_DURATION);
+        }
+        return isStopwatch ? formatTime(0) : formatTime(POMODORO_DURATION);
+    };
+
+    function handleToggleMode() {
+        if (isThisTaskRunning) return; // Don't toggle while running
+        toggleMode(task.id);
+    }
 
     useEffect(() => {
         if (task) {
@@ -341,9 +365,11 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                             style={{ '--progress': `${timerProgress}%` }}
                         >
                             <span className={styles.timerTime}>
-                                {isThisTaskTimer && timerState.timers[task?.id] ? formatTime(timerState.timers[task?.id].remainingTime) : formatTime(POMODORO_DURATION)}
+                                {getDisplayTime()}
                             </span>
-                            <span className={styles.timerSubtext}>FOCUS SESSION</span>
+                            <span className={styles.timerSubtext}>
+                                {isStopwatch ? 'STOPWATCH' : 'FOCUS SESSION'}
+                            </span>
                         </div>
                         <div className={styles.timerControls}>
                             {isThisTaskRunning ? (
@@ -358,7 +384,10 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                     disabled={!canStartTimer || task.status === "completed"}
                                 >
                                     <Play size={12} className={styles.playIcon} />
-                                    {isThisTaskTimer && timerState.timers[task?.id]?.remainingTime < POMODORO_DURATION ? "Resume" : "Start"}
+                                    {currentTaskTimer && (isStopwatch 
+                                        ? (currentTaskTimer.elapsedTime > 0) 
+                                        : (currentTaskTimer.remainingTime < POMODORO_DURATION)) 
+                                        ? "Resume" : "Start"}
                                 </button>
                             )}
                             <button
@@ -367,6 +396,25 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                                 disabled={(!isThisTaskTimer && timerState.taskId !== null) || task.status === "completed"}
                             >
                                 <RotateCcw size={16} />
+                            </button>
+                        </div>
+                        {/* Mode Toggle */}
+                        <div className={`${styles.modeToggleContainer} ${isThisTaskRunning || task.status === "completed" ? styles.disabled : ""}`}>
+                            <button
+                                className={`${styles.modeOption} ${!isStopwatch ? styles.active : ""}`}
+                                onClick={() => !isStopwatch ? null : handleToggleMode()}
+                                disabled={isThisTaskRunning || task.status === "completed"}
+                            >
+                                <Timer size={14} />
+                                Countdown
+                            </button>
+                            <button
+                                className={`${styles.modeOption} ${isStopwatch ? styles.active : ""}`}
+                                onClick={() => isStopwatch ? null : handleToggleMode()}
+                                disabled={isThisTaskRunning || task.status === "completed"}
+                            >
+                                <Clock size={14} />
+                                Stopwatch
                             </button>
                         </div>
                         {timerState.taskId && timerState.timers[timerState.taskId]?.isRunning && !isThisTaskTimer && (
