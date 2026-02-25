@@ -263,7 +263,16 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
 
           <div >
 
-            <textarea required value={form.title} className={styles.titleTa} name="title" id="title" onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
+            <textarea required value={form.title}
+              className={styles.titleTa}
+              name="title" id="title"
+              onChange={(e) => setForm(f => ({ ...f, title: e.target.value.replace(/\n/g, "") }))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.target.blur();
+                }
+              }} />
           </div>
 
           <div className={styles.meta}>
