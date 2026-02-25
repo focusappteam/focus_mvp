@@ -1,6 +1,47 @@
 import styles from "./createTaskModal.module.css";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
+function Dropdown({ value, options, onChange }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    return (
+        <div className={styles.dropdown} ref={ref}>
+            <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${open ? styles.open : ""}`}
+                onClick={() => setOpen(!open)}
+            >
+                {value}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+            {open && (
+                <div className={styles.dropdownMenu}>
+                    {options.map(opt => (
+                        <button
+                            key={opt}
+                            type="button"
+                            className={`${styles.dropdownOption} ${value === opt ? styles.selected : ""}`}
+                            onClick={() => { onChange(opt); setOpen(false); }}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function CreateTaskModal({ onClose, onCreate, position }) {
 
@@ -63,14 +104,11 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                         />
                     </div>
                     <div className={styles.field}>
-                        <select
+                        <Dropdown
                             value={form.priority}
-                            onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                        >
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                        </select>
+                            options={["Low", "Medium", "High"]}
+                            onChange={val => setForm(f => ({ ...f, priority: val }))}
+                        />
                     </div>
 
                     <div className={styles.actions}>

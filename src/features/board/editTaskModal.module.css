@@ -83,9 +83,15 @@
     margin-bottom: 20px;
 }
 
-.priority {
-    color: #ef6b5a;
-    font-weight: 600;
+.Low {
+    color: green;
+}
+.Medium{
+    color:orange;
+}
+
+.High{
+    color:red;
 }
 
 .description {
@@ -633,4 +639,39 @@
     color: #ef6b5a;
     display: flex;
     align-items: center;
+}
+
+
+
+
+
+
+.field textarea {
+    width: 100%;
+
+    background-color: transparent;
+
+    border: none;
+
+    border-radius: 0.5rem;
+
+    padding: 0.75rem 0.50rem;
+
+    font-size: 0.875rem;
+
+    color: #475569;
+
+    resize: none;
+
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.field textarea::placeholder {
+    color: #9ca3af;
+}
+
+.field textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(71 85 105);
+    background-color:#f8fafc;
 }

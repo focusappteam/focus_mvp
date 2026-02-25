@@ -238,224 +238,253 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     }
 
     return (
-        <div className={styles.overlay} onClick={handleClose}>
-            <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                {/* Left Panel - Main Content */}
-                <div inert={task.status === "completed"} className={styles.mainContent}>
-                    <div className={styles.header}>
-                        <div className={styles.category}>
-                            <FolderOpen size={14} className={styles.categoryIcon} />
-                            {form.category}
-                        </div>
-                        <button className={styles.closeButton} onClick={handleClose}>
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    <h1 className={styles.title}>{form.title}</h1>
-
-                    <div className={styles.meta}>
-                        Created: {formatDate(form.createdAt)} • <span className={styles.priority}>Priority: {form.priority}</span>
-                    </div>
-
-                    <p className={styles.description}>
-                        {form.description || "No description provided."}
-                    </p>
-
-                    {/* Checklist Section */}
-                    <div className={styles.checklistSection}>
-                        <div className={styles.sectionHeader}>
-                            <CheckSquare size={14} className={styles.sectionIcon} />
-                            PREPARATION CHECKLIST
-                        </div>
-                        <div className={styles.checklistItems}>
-                            {form.checklist.map((item, index) => (
-                                <div
-                                    key={index}
-                                    className={`${styles.checklistItem} ${item.checked ? styles.checked : ""}`}
-                                    onClick={() => handleChecklistToggle(index)}
-                                >
-                                    <div className={`${styles.checkbox} ${item.checked ? styles.checked : ""}`}>
-                                        {item.checked && <Check size={12} className={styles.checkmark} />}
-                                    </div>
-                                    <span className={styles.checklistText}>{item.text}</span>
-                                    <button
-                                        className={styles.removeChecklistItem}
-                                        onClick={(e) => handleRemoveChecklistItem(index, e)}
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
-                            ))}
-
-                            {isAddingChecklist ? (
-                                <div className={styles.checklistItem}>
-                                    <div className={styles.checkbox}></div>
-                                    <input
-                                        type="text"
-                                        className={styles.newChecklistInput}
-                                        placeholder="Enter checklist item..."
-                                        value={newChecklistItem}
-                                        onChange={e => setNewChecklistItem(e.target.value)}
-                                        onKeyDown={handleAddChecklistItem}
-                                        onBlur={() => {
-                                            if (!newChecklistItem.trim()) {
-                                                setIsAddingChecklist(false);
-                                            }
-                                        }}
-                                        autoFocus
-                                    />
-                                </div>
-                            ) : (
-                                <div
-                                    className={styles.addChecklistItem}
-                                    onClick={() => setIsAddingChecklist(true)}
-                                >
-                                    <div className={styles.addIcon}><Plus size={14} /></div>
-                                    <span className={styles.addText}>Add checklist item</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Tags Section */}
-                    <div className={styles.tagsSection}>
-                        {form.tags.map((tag, index) => (
-                            <span key={index} className={`${styles.tag}`}>
-                                #{tag}
-                            </span>
-                        ))}
-
-                        {isAddingTag ? (
-                            <input
-                                type="text"
-                                className={styles.tagInput}
-                                placeholder="Tag name"
-                                value={newTag}
-                                onChange={e => setNewTag(e.target.value)}
-                                onKeyDown={handleAddTag}
-                                onBlur={() => {
-                                    if (!newTag.trim()) {
-                                        setIsAddingTag(false);
-                                    }
-                                }}
-                                autoFocus
-                            />
-                        ) : (
-                            <button
-                                className={styles.addTagButton}
-                                onClick={() => setIsAddingTag(true)}
-                            >
-                                <Plus size={12} /> Add Tag
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Right Panel - Sidebar */}
-                <div className={styles.sidebar}>
-                    {/* Timer Section */}
-                    <div className={styles.timerSection}>
-                        <div className={styles.timerLabel}>
-                            <Brain size={14} className={styles.timerIcon} />
-                            DEEP WORK
-                        </div>
-                        <div
-                            className={`${styles.timerCircle} ${isThisTaskRunning ? styles.timerActive : ""}`}
-                            style={{ '--progress': `${timerProgress}%` }}
-                        >
-                            <span className={styles.timerTime}>
-                                {getDisplayTime()}
-                            </span>
-                            <span className={styles.timerSubtext}>
-                                {isStopwatch ? 'STOPWATCH' : 'FOCUS SESSION'}
-                            </span>
-                        </div>
-                        <div className={styles.timerControls}>
-                            {isThisTaskRunning ? (
-                                <button className={styles.pauseButton} onClick={handlePauseTimer} >
-                                    <Pause size={12} className={styles.playIcon} />
-                                    Pause
-                                </button>
-                            ) : (
-                                <button
-                                    className={`${styles.startButton} ${!canStartTimer ? styles.disabled : ""}`}
-                                    onClick={handleStartTimer}
-                                    disabled={!canStartTimer || task.status === "completed"}
-                                >
-                                    <Play size={12} className={styles.playIcon} />
-                                    {currentTaskTimer && (isStopwatch 
-                                        ? (currentTaskTimer.elapsedTime > 0) 
-                                        : (currentTaskTimer.remainingTime < POMODORO_DURATION)) 
-                                        ? "Resume" : "Start"}
-                                </button>
-                            )}
-                            <button
-                                className={styles.resetButton}
-                                onClick={handleResetTimer}
-                                disabled={(!isThisTaskTimer && timerState.taskId !== null) || task.status === "completed"}
-                            >
-                                <RotateCcw size={16} />
-                            </button>
-                        </div>
-                        {/* Mode Toggle */}
-                        <div className={`${styles.modeToggleContainer} ${isThisTaskRunning || task.status === "completed" ? styles.disabled : ""}`}>
-                            <button
-                                className={`${styles.modeOption} ${!isStopwatch ? styles.active : ""}`}
-                                onClick={() => !isStopwatch ? null : handleToggleMode()}
-                                disabled={isThisTaskRunning || task.status === "completed"}
-                            >
-                                <Timer size={14} />
-                                Countdown
-                            </button>
-                            <button
-                                className={`${styles.modeOption} ${isStopwatch ? styles.active : ""}`}
-                                onClick={() => isStopwatch ? null : handleToggleMode()}
-                                disabled={isThisTaskRunning || task.status === "completed"}
-                            >
-                                <Clock size={14} />
-                                Stopwatch
-                            </button>
-                        </div>
-                        {timerState.taskId && timerState.timers[timerState.taskId]?.isRunning && !isThisTaskTimer && (
-                            <div className={styles.timerWarning}>
-                                Timer active on another task
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Card Accent Section */}
-                    <div className={styles.accentSection}>
-                        <div className={styles.accentLabel}>
-                            <Palette size={14} className={styles.accentIcon} />
-                            CARD ACCENT
-                        </div>
-                        <div className={styles.colorPicker}>
-                            {ACCENT_COLORS.map((color) => (
-                                <div
-                                    key={color}
-                                    className={`${styles.colorOption} ${form.color === color ? styles.selected : ""}`}
-                                    style={{ backgroundColor: color }}
-                                    onClick={() => handleColorSelect(color)}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Actions Section */}
-                    <div className={styles.actionsSection}>
-                        <button className={styles.completeButton} onClick={handleComplete}>
-                            Mark as Complete
-                            <CheckCheck size={18} className={styles.completeIcon} />
-                        </button>
-                        <button className={styles.deleteButton} onClick={handleDelete}>
-                            Delete Task
-                            <Trash2 size={16} className={styles.deleteIcon} />
-                        </button>
-                    </div>
-                </div>
+      <div className={styles.overlay} onClick={handleClose}>
+        <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+          {/* Left Panel - Main Content */}
+          <div
+            inert={task.status === "completed"}
+            className={styles.mainContent}
+          >
+            <div className={styles.header}>
+              <div className={styles.category}>
+                <FolderOpen size={14} className={styles.categoryIcon} />
+                {form.category}
+              </div>
+              <button className={styles.closeButton} onClick={handleClose}>
+                <X size={20} />
+              </button>
             </div>
+
+            
+            <div className={styles.field}>
+                <textarea name="title" id="title">{form.title}</textarea>
+            </div>
+
+            <div className={styles.meta}>
+              Created: {formatDate(form.createdAt)} •{" "}
+              <span className={styles[form.priority]}>
+                Priority: {form.priority}
+              </span>
+            </div>
+
+            <div className={styles.field}>
+              <textarea name="description" id="description">
+                {form.description || "No description provided."}
+              </textarea>
+            </div>
+            {/* Checklist Section */}
+            <div className={styles.checklistSection}>
+              <div className={styles.sectionHeader}>
+                <CheckSquare size={14} className={styles.sectionIcon} />
+                PREPARATION CHECKLIST
+              </div>
+              <div className={styles.checklistItems}>
+                {form.checklist.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`${styles.checklistItem} ${item.checked ? styles.checked : ""}`}
+                    onClick={() => handleChecklistToggle(index)}
+                  >
+                    <div
+                      className={`${styles.checkbox} ${item.checked ? styles.checked : ""}`}
+                    >
+                      {item.checked && (
+                        <Check size={12} className={styles.checkmark} />
+                      )}
+                    </div>
+                    <span className={styles.checklistText}>{item.text}</span>
+                    <button
+                      className={styles.removeChecklistItem}
+                      onClick={(e) => handleRemoveChecklistItem(index, e)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+
+                {isAddingChecklist ? (
+                  <div className={styles.checklistItem}>
+                    <div className={styles.checkbox}></div>
+                    <input
+                      type="text"
+                      className={styles.newChecklistInput}
+                      placeholder="Enter checklist item..."
+                      value={newChecklistItem}
+                      onChange={(e) => setNewChecklistItem(e.target.value)}
+                      onKeyDown={handleAddChecklistItem}
+                      onBlur={() => {
+                        if (!newChecklistItem.trim()) {
+                          setIsAddingChecklist(false);
+                        }
+                      }}
+                      autoFocus
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={styles.addChecklistItem}
+                    onClick={() => setIsAddingChecklist(true)}
+                  >
+                    <div className={styles.addIcon}>
+                      <Plus size={14} />
+                    </div>
+                    <span className={styles.addText}>Add checklist item</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Tags Section */}
+            <div className={styles.tagsSection}>
+              {form.tags.map((tag, index) => (
+                <span key={index} className={`${styles.tag}`}>
+                  #{tag}
+                </span>
+              ))}
+
+              {isAddingTag ? (
+                <input
+                  type="text"
+                  className={styles.tagInput}
+                  placeholder="Tag name"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyDown={handleAddTag}
+                  onBlur={() => {
+                    if (!newTag.trim()) {
+                      setIsAddingTag(false);
+                    }
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <button
+                  className={styles.addTagButton}
+                  onClick={() => setIsAddingTag(true)}
+                >
+                  <Plus size={12} /> Add Tag
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right Panel - Sidebar */}
+          <div className={styles.sidebar}>
+            {/* Timer Section */}
+            <div className={styles.timerSection}>
+              <div className={styles.timerLabel}>
+                <Brain size={14} className={styles.timerIcon} />
+                DEEP WORK
+              </div>
+              <div
+                className={`${styles.timerCircle} ${isThisTaskRunning ? styles.timerActive : ""}`}
+                style={{ "--progress": `${timerProgress}%` }}
+              >
+                <span className={styles.timerTime}>{getDisplayTime()}</span>
+                <span className={styles.timerSubtext}>
+                  {isStopwatch ? "STOPWATCH" : "FOCUS SESSION"}
+                </span>
+              </div>
+              <div className={styles.timerControls}>
+                {isThisTaskRunning ? (
+                  <button
+                    className={styles.pauseButton}
+                    onClick={handlePauseTimer}
+                  >
+                    <Pause size={12} className={styles.playIcon} />
+                    Pause
+                  </button>
+                ) : (
+                  <button
+                    className={`${styles.startButton} ${!canStartTimer ? styles.disabled : ""}`}
+                    onClick={handleStartTimer}
+                    disabled={!canStartTimer || task.status === "completed"}
+                  >
+                    <Play size={12} className={styles.playIcon} />
+                    {currentTaskTimer &&
+                    (isStopwatch
+                      ? currentTaskTimer.elapsedTime > 0
+                      : currentTaskTimer.remainingTime < POMODORO_DURATION)
+                      ? "Resume"
+                      : "Start"}
+                  </button>
+                )}
+                <button
+                  className={styles.resetButton}
+                  onClick={handleResetTimer}
+                  disabled={
+                    (!isThisTaskTimer && timerState.taskId !== null) ||
+                    task.status === "completed"
+                  }
+                >
+                  <RotateCcw size={16} />
+                </button>
+              </div>
+              {/* Mode Toggle */}
+              <div
+                className={`${styles.modeToggleContainer} ${isThisTaskRunning || task.status === "completed" ? styles.disabled : ""}`}
+              >
+                <button
+                  className={`${styles.modeOption} ${!isStopwatch ? styles.active : ""}`}
+                  onClick={() => (!isStopwatch ? null : handleToggleMode())}
+                  disabled={isThisTaskRunning || task.status === "completed"}
+                >
+                  <Timer size={14} />
+                  Countdown
+                </button>
+                <button
+                  className={`${styles.modeOption} ${isStopwatch ? styles.active : ""}`}
+                  onClick={() => (isStopwatch ? null : handleToggleMode())}
+                  disabled={isThisTaskRunning || task.status === "completed"}
+                >
+                  <Clock size={14} />
+                  Stopwatch
+                </button>
+              </div>
+              {timerState.taskId &&
+                timerState.timers[timerState.taskId]?.isRunning &&
+                !isThisTaskTimer && (
+                  <div className={styles.timerWarning}>
+                    Timer active on another task
+                  </div>
+                )}
+            </div>
+
+            {/* Card Accent Section */}
+            <div className={styles.accentSection}>
+              <div className={styles.accentLabel}>
+                <Palette size={14} className={styles.accentIcon} />
+                CARD ACCENT
+              </div>
+              <div className={styles.colorPicker}>
+                {ACCENT_COLORS.map((color) => (
+                  <div
+                    key={color}
+                    className={`${styles.colorOption} ${form.color === color ? styles.selected : ""}`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleColorSelect(color)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Actions Section */}
+            <div className={styles.actionsSection}>
+              <button
+                className={styles.completeButton}
+                onClick={handleComplete}
+              >
+                Mark as Complete
+                <CheckCheck size={18} className={styles.completeIcon} />
+              </button>
+              <button className={styles.deleteButton} onClick={handleDelete}>
+                Delete Task
+                <Trash2 size={16} className={styles.deleteIcon} />
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
     );
 }
 

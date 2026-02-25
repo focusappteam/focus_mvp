@@ -129,3 +129,82 @@
 .closeBtn:hover {
     color: #1e293b;
 }
+
+/* Custom Dropdown */
+.dropdown {
+    position: relative;
+    width: 140px;
+}
+
+.dropdownTrigger {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.dropdownTrigger:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.dropdownTrigger.open {
+    border-color: #4c6f70;
+    background: #fff;
+}
+
+.dropdownTrigger svg {
+    width: 14px;
+    height: 14px;
+    color: #94a3b8;
+    transition: transform 0.2s ease;
+}
+
+.dropdownTrigger.open svg {
+    transform: rotate(180deg);
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.dropdownOption {
+    width: 100%;
+    padding: 0.45rem 0.75rem;
+    background: transparent;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.dropdownOption:hover {
+    background: #f8fafc;
+}
+
+.dropdownOption.selected {
+    background: #f0fdfa;
+    color: #4c6f70;
+}
