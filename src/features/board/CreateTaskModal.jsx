@@ -3,11 +3,12 @@ import { useState } from "react";
 
 
 function CreateTaskModal({ onClose, onCreate, position }) {
-    
+
     const [form, setForm] = useState({
         title: "",
         description: "",
-        color: ""
+        color: "",
+        priority: "Medium"
     });
 
 
@@ -22,7 +23,7 @@ function CreateTaskModal({ onClose, onCreate, position }) {
             description: form.description,
             status: "todo",
             category: "General",
-            priority: "Medium",
+            priority: form.priority,
             createdAt: new Date().toISOString(),
             time: 0,
             timeActive: 0,
@@ -43,10 +44,10 @@ function CreateTaskModal({ onClose, onCreate, position }) {
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.field}>
-                        <label>Título *</label>
+
                         <input
                             type="text"
-                            placeholder="Ej: Estudiar React"
+                            placeholder="Titulo"
                             value={form.title}
                             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                             required
@@ -54,19 +55,29 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                     </div>
 
                     <div className={styles.field}>
-                        <label>Descripción</label>
+
                         <textarea
-                            placeholder="Opcional"
+                            placeholder="Descripción (Opcional)"
                             value={form.description}
                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         />
                     </div>
+                    <div className={styles.field}>
+                        <select
+                            value={form.priority}
+                            onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
+                        >
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
 
                     <div className={styles.actions}>
-                        <button type="button" onClick={onClose}>
+                        <button className={styles.closeBtn} type="button" onClick={onClose}>
                             Cancelar
                         </button>
-                        <button type="submit">Crear</button>
+                        <button className={styles.createBtn} type="submit">Crear</button>
                     </div>
                 </form>
             </div>
