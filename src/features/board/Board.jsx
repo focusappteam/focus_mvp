@@ -414,6 +414,7 @@ function Board() {
                         )
                     }
                     task={editingTask}
+                    showToast={showToast}
                 />
             )}
 

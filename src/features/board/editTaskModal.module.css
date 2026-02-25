@@ -86,12 +86,13 @@
 .Low {
     color: green;
 }
-.Medium{
-    color:orange;
+
+.Medium {
+    color: orange;
 }
 
-.High{
-    color:red;
+.High {
+    color: red;
 }
 
 .description {
@@ -673,5 +674,28 @@
 .field textarea:focus {
     outline: none;
     box-shadow: 0 0 0 1px rgba(71 85 105);
-    background-color:#f8fafc;
+    background-color: #f8fafc;
+}
+
+.titleTa {
+    font-size: 28px !important;
+    font-weight: 700;
+    color: black;
+    height: 40px;
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    border-radius: 0.5rem;
+    resize: none;
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.titleTa::placeholder {
+    color: black;
+}
+
+.titleTa:focus {
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(71 85 105);
+    background-color: #f8fafc;
 }
