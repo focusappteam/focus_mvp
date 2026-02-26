@@ -8,7 +8,6 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
 
   const timer = state.timers[activeTask?.id];
   const isRunning = timer?.isRunning ?? false;
-  const timeLeft = timer?.remainingTime ?? POMODORO_DURATION;
   const isStopWatch = timer?.mode === 'stopwatch';
 
   const [isBreak, setIsBreak] = useState(false);
