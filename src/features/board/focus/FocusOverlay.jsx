@@ -110,23 +110,25 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
           {activeTask.description && (
             <p className={styles.taskDesc}>{activeTask.description}</p>
           )}
-        </div>
 
-        {totalSubtasks > 0 && (
-          <>
-            <div className={styles.subtaskRow}>
-              <span className={styles.subtaskLabel}>
-                {completedSubtasks} OF {totalSubtasks} SUBTASKS COMPLETE
-              </span>
 
-              <div className={styles.progressBar}>
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${progress}%` }}
-                />
+          {totalSubtasks > 0 && (
+            <>
+              <div className={styles.subtaskRow}>
+                <span className={styles.subtaskLabel}>
+                  {completedSubtasks} OF {totalSubtasks} SUBTASKS COMPLETE
+                </span>
+
+                <div className={styles.progressBar}>
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
 
                 <span className={styles.progressPct}>{Math.round(progress)}%</span>
               </div>
+
               <div className={styles.checklistItems}>
                 {checklist.map((item, index) => (
                   <div
@@ -141,10 +143,10 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
                   </div>
                 ))}
               </div>
-            </div>
-          </>
-        )}
-      </div>
+
+            </>
+          )}
+        </div></div>
 
       <div className={styles.controls}>
         {!isBreak && (
