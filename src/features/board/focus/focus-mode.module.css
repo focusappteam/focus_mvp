@@ -1,6 +1,4 @@
-/* ─── Focus Mode Styles ─────────────────────────────────── */
-
-/* ── FocusButton (in header/board) ── */
+/*FocusButton*/
 .focusBtn {
   display: inline-flex;
   position: fixed;
@@ -33,7 +31,6 @@
   pointer-events: none;
 }
 
-/* ── Overlay ── */
 .overlay {
   position: fixed;
   inset: 0;
@@ -47,7 +44,7 @@
   overflow-y: auto;
 }
 
-/* ── Top bar ── */
+/*Top bar*/
 .topBar {
   width: 100%;
   max-width: 700px;
@@ -82,7 +79,7 @@
   color: #333;
 }
 
-/* ── Timer ── */
+/*Timer */
 .timerWrapper {
   margin-top: 56px;
   text-align: center;
@@ -123,7 +120,7 @@
   margin-top: 6px;
 }
 
-/* ── Task card ── */
+/*Task card*/
 .taskCard {
   margin-top: 40px;
   width: 100%;
@@ -205,7 +202,7 @@
   font-weight: 600;
 }
 
-/* ── Controls ── */
+/*Controls*/
 .controls {
   margin-top: 24px;
   display: flex;
@@ -246,7 +243,6 @@
   background: #3a6860;
 }
 
-/* ── Hint ── */
 .hint {
   margin-top: 28px;
   font-size: 11px;
@@ -254,4 +250,47 @@
   text-align: center;
   max-width: 380px;
   line-height: 1.5;
+}
+/*Checklist en Focus Mode*/
+.checklistItems {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklistItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.checklistItemChecked .checklistText {
+  text-decoration: line-through;
+  color: #bbb;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #ccc;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.18s, border-color 0.18s;
+}
+
+.checkboxChecked {
+  background: #4a7c70;
+  border-color: #4a7c70;
+  color: #fff;
+}
+
+.checklistText {
+  font-size: 13px;
+  color: #444;
 }

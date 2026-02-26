@@ -1,4 +1,5 @@
 import React from 'react';
+import { Timer } from 'lucide-react';
 import styles from './focus-mode.module.css';
 
 const FocusButton = ({ onEnterFocus }) => {
@@ -10,9 +11,9 @@ const FocusButton = ({ onEnterFocus }) => {
       className={`${styles.focusBtn} ${!isActive ? styles.focusBtnDisabled : ''}`}
       onClick={() => isActive && onEnterFocus()}
       disabled={!isActive}
-      title={!isActive ? 'Inicia el timer de una tarea para activar Focus Mode' : 'Entrar en modo focus'}
     >
-      ✦ FOCUS MODE
+      <Timer size={14} />
+      FOCUS MODE
     </button>
   );
 };

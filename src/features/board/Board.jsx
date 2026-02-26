@@ -40,8 +40,18 @@ function Board() {
     const [focusedTaskId, setFocusedTaskId] = useState(null);
     const isFocusMode = focusedTaskId !== null;
     const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
-    const globalTimer = JSON.parse(localStorage.getItem("globalTimer") || "{}");     /* Agrege el timer global*/ 
+    // ✅ DESPUÉS — dentro del componente Board(), junto a los otros useState
+    const [globalTimer, setGlobalTimer] = useState(() =>
+        JSON.parse(localStorage.getItem("globalTimer") || "{}")
+    );
     const activeTask = tasks.find(t => t.id === globalTimer.taskId) ?? null;
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setGlobalTimer(JSON.parse(localStorage.getItem("globalTimer") || "{}"));
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
@@ -411,7 +421,12 @@ function Board() {
             {isFocusOverlayOpen && activeTask && (
                 <FocusOverlay
                     activeTask={activeTask}
-                    onExit={() => setIsFocusOverlayOpen(false)}    /*agregue el Overlay*/ 
+                    onExit={() => setIsFocusOverlayOpen(false)}
+                    onUpdateTask={(updatedTask) => {       
+                        setTasks(prev => prev.map(t =>
+                            t.id === updatedTask.id ? updatedTask : t
+                        ));
+                    }}
                     onCompleteTask={(taskId) => {
                         setTasks(prev => prev.map(t =>
                             t.id === taskId
@@ -420,6 +435,7 @@ function Board() {
                         ));
                         setFocusedTaskId(null);
                         setIsFocusOverlayOpen(false);
+                        localStorage.removeItem("globalTimer");
                     }}
                 />
             )}
