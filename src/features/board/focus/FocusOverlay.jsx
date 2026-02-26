@@ -9,6 +9,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
   const timer = state.timers[activeTask?.id];
   const isRunning = timer?.isRunning ?? false;
   const timeLeft = timer?.remainingTime ?? POMODORO_DURATION;
+  const isStopWatch = timer?.mode === 'stopwatch';
 
   const [isBreak, setIsBreak] = useState(false);
   const [breakTime, setBreakTime] = useState(5 * 60);
@@ -41,7 +42,11 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
 
   if (!activeTask) return null;
 
-  const displayTime = isBreak ? breakTime : timeLeft;
+  const displayTime = isBreak
+    ? breakTime
+    : isStopWatch
+      ? (timer?.elapsedTime ?? 0)
+      : (timer?.remainingTime ?? POMODORO_DURATION);
   const minutes = String(Math.floor(displayTime / 60)).padStart(2, "0");
   const seconds = String(displayTime % 60).padStart(2, "0");
 
