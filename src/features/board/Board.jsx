@@ -5,7 +5,8 @@ import Task from "./Task"
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
-import { RotateCcw, Plus, Minus } from "lucide-react"
+import FocusButton from './focus/FocusButton';      /*importe modo focus*/ 
+import FocusOverlay from './focus/FocusOverlay';import { RotateCcw, Plus, Minus } from "lucide-react"
 
 function Board() {
     const MIN_ZOOM = 0.5;
@@ -42,6 +43,19 @@ function Board() {
     const { state: timerState } = useTimer();
     const focusedTaskId = timerState.taskId && timerState.timers[timerState.taskId]?.isRunning ? timerState.taskId : null;
     const isFocusMode = focusedTaskId !== null;
+    const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
+    // ✅ DESPUÉS — dentro del componente Board(), junto a los otros useState
+    const [globalTimer, setGlobalTimer] = useState(() =>
+        JSON.parse(localStorage.getItem("globalTimer") || "{}")
+    );
+    const activeTask = tasks.find(t => t.id === globalTimer.taskId) ?? null;
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setGlobalTimer(JSON.parse(localStorage.getItem("globalTimer") || "{}"));
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
@@ -359,7 +373,10 @@ function Board() {
             >
                 +
             </button>
-
+            <FocusButton
+                activeTask={activeTask}
+                onEnterFocus={() => setIsFocusOverlayOpen(true)}    /*agregeue boton focus  */
+            />
 
             <div className={styles.hint}>
                 Haga doble clic en cualquier lugar para crear una nueva tarea
@@ -425,6 +442,27 @@ function Board() {
                 >
                     {toast}
                 </div>
+            )}
+            {isFocusOverlayOpen && activeTask && (
+                <FocusOverlay
+                    activeTask={activeTask}
+                    onExit={() => setIsFocusOverlayOpen(false)}
+                    onUpdateTask={(updatedTask) => {       
+                        setTasks(prev => prev.map(t =>
+                            t.id === updatedTask.id ? updatedTask : t
+                        ));
+                    }}
+                    onCompleteTask={(taskId) => {
+                        setTasks(prev => prev.map(t =>
+                            t.id === taskId
+                                ? { ...t, status: 'completed', tags: [...(t.tags || []), 'COMPLETED'] }
+                                : t
+                        ));
+                        setFocusedTaskId(null);
+                        setIsFocusOverlayOpen(false);
+                        localStorage.removeItem("globalTimer");
+                    }}
+                />
             )}
         </div>
     );
