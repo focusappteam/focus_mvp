@@ -1,5 +1,6 @@
 import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
+import FocusButton from "../../features/board/focus/FocusButton";
 
 function Header() {
     const { state, POMODORO_DURATION } = useTimer();
@@ -12,10 +13,10 @@ function Header() {
 
     const activeTimer = state.taskId && state.timers[state.taskId];
     const isStopwatch = activeTimer?.mode === 'stopwatch';
-    
-    const currentTime = activeTimer
-        ? (isStopwatch ? activeTimer.elapsedTime || 0 : activeTimer.remainingTime)
-        : POMODORO_DURATION;
+
+    const currentTime = isStopwatch
+        ? activeTimer.elapsedTime || 0
+        : activeTimer?.remainingTime ?? POMODORO_DURATION;
 
     return (
         <header className={styles.header}>
@@ -25,9 +26,15 @@ function Header() {
             </div>
 
             <div className={styles.headerCenter}>
-                <div className={styles.timerBadge}>{formatTime(currentTime)}</div>
-                <div className={styles.focusBadge}>{isStopwatch ? 'STOPWATCH' : 'FOCUS'}</div>
+                {activeTimer && (
+                    <>
+                        <div className={styles.timerBadge}>{formatTime(currentTime)}</div>
+                        <div className={styles.focusBadge}>{isStopwatch ? 'STOPWATCH' : 'CountDown'}</div>
+                    </>
+
+                )}
             </div>
+
 
             <input
                 className={styles.search}
