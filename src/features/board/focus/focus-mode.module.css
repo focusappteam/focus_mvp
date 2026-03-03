@@ -1,11 +1,7 @@
 /*FocusButton*/
 .focusBtn {
   display: inline-flex;
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+  position: static;
   align-items: center;
   gap: 6px;
   padding: 7px 16px;
@@ -127,7 +123,7 @@
   max-width: 440px;
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
   display: flex;
   align-items: flex-start;
   gap: 16px;

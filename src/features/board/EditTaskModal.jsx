@@ -164,15 +164,21 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
     setForm(f => ({ ...f, checklist: newChecklist }));
   }
 
-  function handleAddChecklistItem(e) {
-    if (e.key === "Enter" && newChecklistItem.trim()) {
-      e.preventDefault();
+  function commitChecklistItem() {
+    if (newChecklistItem.trim()) {
       setForm(f => ({
         ...f,
         checklist: [...f.checklist, { text: newChecklistItem.trim(), checked: false }]
       }));
-      setNewChecklistItem("");
-      setIsAddingChecklist(false);
+    }
+    setNewChecklistItem("");
+    setIsAddingChecklist(false);
+  }
+
+  function handleAddChecklistItem(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitChecklistItem();
     } else if (e.key === "Escape") {
       setNewChecklistItem("");
       setIsAddingChecklist(false);
@@ -332,11 +338,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                     value={newChecklistItem}
                     onChange={(e) => setNewChecklistItem(e.target.value)}
                     onKeyDown={handleAddChecklistItem}
-                    onBlur={() => {
-                      if (!newChecklistItem.trim()) {
-                        setIsAddingChecklist(false);
-                      }
-                    }}
+                    onBlur={commitChecklistItem}
                     autoFocus
                   />
                 </div>

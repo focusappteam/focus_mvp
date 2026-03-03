@@ -6,10 +6,7 @@ import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 import { RotateCcw, Plus, Minus } from "lucide-react";
-import FocusButton from "./focus/FocusButton";
 import FocusOverlay from "./focus/FocusOverlay";
-
-
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
@@ -19,7 +16,7 @@ const TASK_HEIGHT = 60;
 const HEADER_HEIGHT = 1;
 
 
-function Board() {
+function Board({ isFocusOverlayOpen, onExitFocus }) {
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -34,7 +31,6 @@ function Board() {
     const [editingTask, setEditingTask] = useState(null);
     const [isPanning, setIsPanning] = useState(false);
     const [isHoveringTask, setIsHoveringTask] = useState(false);
-    const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
     const panStartRef = useRef({ x: 0, y: 0 });
     const toastTimeoutRef = useRef(null);
@@ -276,12 +272,6 @@ function Board() {
                 +
             </button>
 
-            {activeTask && (
-                <FocusButton
-                    activeTask={activeTask}
-                    onEnterFocus={() => setIsFocusOverlayOpen(true)}
-                />
-            )}
             <div className={styles.hint}>
                 Haga doble clic en cualquier lugar para crear una nueva tarea
             </div>
@@ -336,7 +326,7 @@ function Board() {
             {isFocusOverlayOpen && activeTask && (
                 <FocusOverlay
                     activeTask={activeTask}
-                    onExit={() => setIsFocusOverlayOpen(false)}
+                    onExit={onExitFocus}
                     onUpdateTask={(updatedTask) =>
                         setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t))
                     }
@@ -348,7 +338,7 @@ function Board() {
                                     : t
                             )
                         );
-                        setIsFocusOverlayOpen(false);
+                        onExitFocus();
                     }}
                 />
             )}
