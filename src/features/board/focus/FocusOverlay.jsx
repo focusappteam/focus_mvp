@@ -62,6 +62,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
   };
 
   const handleComplete = () => {
+    handlePauseResume();
     onCompleteTask(activeTask.id);
     onExit();
   };
