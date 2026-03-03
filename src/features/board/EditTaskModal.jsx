@@ -1,5 +1,5 @@
 import styles from "./editTaskModal.module.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   FolderOpen,
   X,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useTimer } from "../../contexts/TimerContext";
 
+
 const ACCENT_COLORS = [
   "#4a5e52",
   "#f59e0b",
@@ -25,7 +26,11 @@ const ACCENT_COLORS = [
   "#f472b6",
   "#34d399"
 ];
-
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 // duration now comes from context
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast }) {
@@ -51,7 +56,13 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
   // Check if this task owns the timer and whether we can start
   const isThisTaskTimer = timerState.taskId === task?.id;
   const isThisTaskRunning = isThisTaskTimer && timerState.timers[task?.id]?.isRunning;
-  const canStartTimer = !isThisTaskRunning || isThisTaskTimer;
+
+  const canStartTimer = useMemo(() => {
+    const otherTaskRunning = timerState.taskId &&
+      timerState.taskId !== task?.id &&
+      timerState.timers[timerState.taskId]?.isRunning;
+    return !otherTaskRunning;
+  }, [timerState.taskId, timerState.timers, task?.id]);
 
   // Get current mode for this task (default to 'timer')
   const currentMode = timerState.timers[task?.id]?.mode || 'timer';
@@ -98,31 +109,25 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
   function handleResetTimer() {
     reset();
   }
-
-  function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-
   // Calculate progress for the timer circle
   const currentTaskTimer = timerState.timers[task?.id];
-  const timerProgress = currentTaskTimer
-    ? isStopwatch
+  const timerProgress = useMemo(() => {
+    if (!currentTaskTimer) return 0;
+    return isStopwatch
       ? Math.min((currentTaskTimer.elapsedTime || 0) / POMODORO_DURATION * 100, 100)
-      : ((POMODORO_DURATION - currentTaskTimer.remainingTime) / POMODORO_DURATION) * 100
-    : 0;
+      : ((POMODORO_DURATION - currentTaskTimer.remainingTime) / POMODORO_DURATION) * 100;
+  }, [currentTaskTimer, isStopwatch, POMODORO_DURATION]);
+
 
   // Get display time based on mode - show stored time if available
-  const getDisplayTime = () => {
+  const getDisplayTime = useCallback(() => {
     if (currentTaskTimer) {
-      if (isStopwatch) {
-        return formatTime(currentTaskTimer.elapsedTime || 0);
-      }
-      return formatTime(currentTaskTimer.remainingTime ?? POMODORO_DURATION);
+      return isStopwatch
+        ? formatTime(currentTaskTimer.elapsedTime || 0)
+        : formatTime(currentTaskTimer.remainingTime ?? POMODORO_DURATION);
     }
     return isStopwatch ? formatTime(0) : formatTime(POMODORO_DURATION);
-  };
+  }, [currentTaskTimer, isStopwatch, POMODORO_DURATION]);
 
   function handleToggleMode() {
     if (isThisTaskRunning) return; // Don't toggle while running

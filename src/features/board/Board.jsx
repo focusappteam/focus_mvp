@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTimer } from "../../contexts/TimerContext";
 import styles from "./board.module.css";
 import Task from "./Task";
@@ -9,50 +9,78 @@ import { RotateCcw, Plus, Minus } from "lucide-react";
 import FocusButton from "./focus/FocusButton";
 import FocusOverlay from "./focus/FocusOverlay";
 
+
+
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.1;
+const TASK_WIDTH = 260;
+const TASK_HEIGHT = 60;
+const HEADER_HEIGHT = 1;
+
+
 function Board() {
-    const MIN_ZOOM = 0.5;
-    const MAX_ZOOM = 2;
-    const ZOOM_STEP = 0.1;
-
-    const TASK_WIDTH = 260;
-    const TASK_HEIGHT = 60;
-    const HEADER_HEIGHT = 1;
-
     const canvasRef = useRef(null);
-
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
-
     const [toast, setToast] = useState(null);
     const [toastVisible, setToastVisible] = useState(false);
-
     const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
         return savedTasks ? JSON.parse(savedTasks) : [];
     });
-
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [isEditingTask, setIsEditingTask] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
-
     const [isPanning, setIsPanning] = useState(false);
-    const panStartRef = useRef({ x: 0, y: 0 });
-
     const [isHoveringTask, setIsHoveringTask] = useState(false);
     const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
+    const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
+    const panStartRef = useRef({ x: 0, y: 0 });
+    const toastTimeoutRef = useRef(null);
+    const toastCleanupRef = useRef(null);
+    const isCreatingRef = useRef(false);
+    const isEditingRef = useRef(false);
+    useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
+    useEffect(() => { isEditingRef.current = isEditingTask; }, [isEditingTask]);
 
     // --- Fuente de verdad: TimerContext ---
     const { state: timerState } = useTimer();
-    const activeTask = tasks.find(t => t.id === timerState.taskId) ?? null;
-    const focusedTaskId = timerState.taskId && timerState.timers[timerState.taskId]?.isRunning
-        ? timerState.taskId
-        : null;
+    const activeTask = useMemo(() => tasks.find(t => t.id === timerState.taskId) ?? null, [tasks, timerState.taskId]);
+    const focusedTaskId = useMemo(() =>
+        timerState.taskId && timerState.timers[timerState.taskId]?.isRunning
+            ? timerState.taskId
+            : null, [timerState.taskId, timerState.timers]);
+
+
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
 
+
+    function handleWheel(e) {
+        if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        const rect = canvasRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        setZoom(prevZoom => {
+            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+            const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prevZoom + delta).toFixed(2)));
+            setOffset(prevOffset => {
+                const worldX = (mouseX - prevOffset.x) / prevZoom;
+                const worldY = (mouseY - prevOffset.y) / prevZoom;
+                return {
+                    x: mouseX - worldX * nextZoom,
+                    y: mouseY - worldY * nextZoom,
+                };
+            });
+            return nextZoom;
+        });
+    }
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -61,13 +89,13 @@ function Board() {
     }, []);
 
     function showToast(message) {
-        clearTimeout(showToast.timeout);
-        clearTimeout(showToast.cleanupTimeout);
+        clearTimeout(toastTimeoutRef.current);
+        clearTimeout(toastCleanupRef.current);
         setToast(message);
         setToastVisible(true);
-        showToast.timeout = setTimeout(() => {
+        toastTimeoutRef.current = setTimeout(() => {
             setToastVisible(false);
-            showToast.cleanupTimeout = setTimeout(() => setToast(null), 200);
+            toastCleanupRef.current = setTimeout(() => setToast(null), 200);
         }, 2000);
     }
 
@@ -137,7 +165,7 @@ function Board() {
         });
     }
 
-    const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
+
 
     function handleBoardDoubleClick(e) {
         if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
@@ -150,27 +178,6 @@ function Board() {
         setIsCreatingTask(true);
     }
 
-    function handleWheel(e) {
-        if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
-        if (!e.ctrlKey) return;
-        e.preventDefault();
-        const rect = canvasRef.current.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        setZoom(prevZoom => {
-            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-            const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prevZoom + delta).toFixed(2)));
-            setOffset(prevOffset => {
-                const worldX = (mouseX - prevOffset.x) / prevZoom;
-                const worldY = (mouseY - prevOffset.y) / prevZoom;
-                return {
-                    x: mouseX - worldX * nextZoom,
-                    y: mouseY - worldY * nextZoom,
-                };
-            });
-            return nextZoom;
-        });
-    }
 
     function zoomAtCenter(direction) {
         const rect = canvasRef.current.getBoundingClientRect();
