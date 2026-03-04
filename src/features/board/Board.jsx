@@ -1,102 +1,97 @@
-import { useEffect, useRef, useState } from "react";
-import styles from "./board.module.css"
-import Task from "./Task"
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTimer } from "../../contexts/TimerContext";
+import styles from "./board.module.css";
+import Task from "./Task";
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
+import { RotateCcw, Plus, Minus } from "lucide-react";
+import FocusOverlay from "./focus/FocusOverlay";
 
-function Board() {
-    const MIN_ZOOM = 0.5;
-    const MAX_ZOOM = 2;
-    const ZOOM_STEP = 0.1;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.1;
+const TASK_WIDTH = 260;
+const TASK_HEIGHT = 60;
+const HEADER_HEIGHT = 1;
 
-    const TASK_WIDTH = 260;
-    const TASK_HEIGHT = 60;
-    const HEADER_HEIGHT = 1;
 
+function Board({ isFocusOverlayOpen, onExitFocus }) {
     const canvasRef = useRef(null);
-
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
-
     const [toast, setToast] = useState(null);
-    const [toastVisible, setToastVisible] = useState(false); // control entry/exit animations
-
+    const [toastVisible, setToastVisible] = useState(false);
     const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
         return savedTasks ? JSON.parse(savedTasks) : [];
-    })
-
-    const [isCreatingTask, setIsCreatingTask] = useState(false)
-    const [isEditingTask, setIsEditingTask] = useState(false)
-    const [editingTask, setEditingTask] = useState(null)
-
+    });
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+    const [isEditingTask, setIsEditingTask] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
     const [isPanning, setIsPanning] = useState(false);
-    const panStartRef = useRef({ x: 0, y: 0 });
-
     const [isHoveringTask, setIsHoveringTask] = useState(false);
+    const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
+    const panStartRef = useRef({ x: 0, y: 0 });
+    const toastTimeoutRef = useRef(null);
+    const toastCleanupRef = useRef(null);
+    const isCreatingRef = useRef(false);
+    const isEditingRef = useRef(false);
+    useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
+    useEffect(() => { isEditingRef.current = isEditingTask; }, [isEditingTask]);
 
-    const [focusedTaskId, setFocusedTaskId] = useState(() => {
-    const saved = localStorage.getItem("globalTimer");
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.isRunning && parsed.taskId) return parsed.taskId;
-    }
-    return null;
-});
+    // --- Fuente de verdad: TimerContext ---
+    const { state: timerState } = useTimer();
+    const activeTask = useMemo(() => tasks.find(t => t.id === timerState.taskId) ?? null, [tasks, timerState.taskId]);
+    const focusedTaskId = useMemo(() =>
+        timerState.taskId && timerState.timers[timerState.taskId]?.isRunning
+            ? timerState.taskId
+            : null, [timerState.taskId, timerState.timers]);
+
+
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {
-        localStorage.setItem("tasks", JSON.stringify(tasks), [tasks])
-    })
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }, [tasks]);
 
+
+    function handleWheel(e) {
+        if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        const rect = canvasRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        setZoom(prevZoom => {
+            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+            const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prevZoom + delta).toFixed(2)));
+            setOffset(prevOffset => {
+                const worldX = (mouseX - prevOffset.x) / prevZoom;
+                const worldY = (mouseY - prevOffset.y) / prevZoom;
+                return {
+                    x: mouseX - worldX * nextZoom,
+                    y: mouseY - worldY * nextZoom,
+                };
+            });
+            return nextZoom;
+        });
+    }
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-
         canvas.addEventListener("wheel", handleWheel, { passive: false });
-
-        return () => {
-            canvas.removeEventListener("wheel", handleWheel);
-        };
+        return () => canvas.removeEventListener("wheel", handleWheel);
     }, []);
 
-    useEffect(() => {
-    function syncFocusFromTimer() {
-        const saved = localStorage.getItem("globalTimer");
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed.isRunning && parsed.taskId) {
-                setFocusedTaskId(parsed.taskId);
-            } else {
-                setFocusedTaskId(null);
-            }
-        }
-    }
-
-    window.addEventListener("storage", syncFocusFromTimer);
-
-    const interval = setInterval(syncFocusFromTimer, 1000);
-
-    return () => {
-        window.removeEventListener("storage", syncFocusFromTimer);
-        clearInterval(interval);
-    };
-}, []);
-
     function showToast(message) {
-        // clear any pending timers so repeated calls reset the sequence
-        clearTimeout(showToast.timeout);
-        clearTimeout(showToast.cleanupTimeout);
-
+        clearTimeout(toastTimeoutRef.current);
+        clearTimeout(toastCleanupRef.current);
         setToast(message);
         setToastVisible(true);
-
-        // after display duration, start exit animation
-        showToast.timeout = setTimeout(() => {
+        toastTimeoutRef.current = setTimeout(() => {
             setToastVisible(false);
-            // once animation finishes, actually clear toast content
-            showToast.cleanupTimeout = setTimeout(() => setToast(null), 200);
+            toastCleanupRef.current = setTimeout(() => setToast(null), 200);
         }, 2000);
     }
 
@@ -112,14 +107,9 @@ function Board() {
     function findFreePosition(initialPosition, tasks) {
         let testPosition = { ...initialPosition };
         const GAP = 20;
-
         let collision = true;
-
         while (collision) {
-            collision = tasks.some(task =>
-                isColliding(testPosition, task.position)
-            );
-
+            collision = tasks.some(task => isColliding(testPosition, task.position));
             if (collision) {
                 testPosition = {
                     x: testPosition.x,
@@ -127,57 +117,38 @@ function Board() {
                 };
             }
         }
-
         return testPosition;
     }
 
     function getViewportCenterWorld() {
         const rect = canvasRef.current.getBoundingClientRect();
-
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
-
-        const worldX = (centerX - offset.x) / zoom;
-        const worldY = (centerY - offset.y) / zoom;
-
         return {
-            x: worldX - TASK_WIDTH / 2,
-            y: worldY - TASK_HEIGHT / 2,
+            x: (centerX - offset.x) / zoom - TASK_WIDTH / 2,
+            y: (centerY - offset.y) / zoom - TASK_HEIGHT / 2,
         };
     }
 
     function handleDragEnd(event) {
         const { active, delta } = event;
-
         setTasks((prevTasks) => {
             const activeTask = prevTasks.find(t => t.id === active.id);
             if (!activeTask) return prevTasks;
 
-            const adjustedDeltaX = delta.x / zoom;
-            const adjustedDeltaY = delta.y / zoom;
+            const rawX = (activeTask.position?.x || 0) + delta.x / zoom;
+            const rawY = (activeTask.position?.y || 0) + delta.y / zoom;
+            const minVisibleY = (HEADER_HEIGHT - offset.y) / zoom;
 
-            const rawX = (activeTask.position?.x || 0) + adjustedDeltaX;
-            const rawY = (activeTask.position?.y || 0) + adjustedDeltaY;
-
-            const minVisibleY =
-                (HEADER_HEIGHT - offset.y) / zoom;
-
-            const isBehindHeader = rawY < minVisibleY;
-
-            const newPosition = {
-                x: rawX,
-                y: isBehindHeader ? activeTask.position.y : rawY,
-            };
-
-            if (isBehindHeader) {
+            if (rawY < minVisibleY) {
                 showToast("Esta tarea no puede ser ubicada aqui");
                 return prevTasks;
             }
 
-            const hasCollision = prevTasks.some(task => {
-                if (task.id === active.id) return false;
-                return isColliding(newPosition, task.position);
-            });
+            const newPosition = { x: rawX, y: rawY };
+            const hasCollision = prevTasks.some(task =>
+                task.id !== active.id && isColliding(newPosition, task.position)
+            );
 
             if (hasCollision) {
                 showToast("La tarea no puede ubicarse sobre otra");
@@ -185,91 +156,39 @@ function Board() {
             }
 
             return prevTasks.map(task =>
-                task.id === active.id
-                    ? { ...task, position: newPosition }
-                    : task
+                task.id === active.id ? { ...task, position: newPosition } : task
             );
         });
     }
 
-    // Store last click position for modal
-    const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
+
 
     function handleBoardDoubleClick(e) {
+        if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
         if (isFocusMode) return;
-        if (!isEditingTask) {
-            // Get click position relative to board
-            const rect = e.currentTarget.getBoundingClientRect();
-            const screenX = e.clientX - rect.left;
-            const screenY = e.clientY - rect.top;
-
-            const worldX = (screenX - offset.x) / zoom;
-            const worldY = (screenY - offset.y) / zoom;
-
-            setNewTaskPosition({
-                x: worldX,
-                y: worldY,
-            });
-            setIsCreatingTask(true);
-        }
-    }
-
-    function handleWheel(e) {
-        if (!e.ctrlKey) return;
-
-        e.preventDefault();
-
-        const rect = canvasRef.current.getBoundingClientRect();
-
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-
-        setZoom(prevZoom => {
-            const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
-            const nextZoom = Math.min(
-                MAX_ZOOM,
-                Math.max(MIN_ZOOM, +(prevZoom + delta).toFixed(2))
-            );
-
-            setOffset(prevOffset => {
-                const worldX = (mouseX - prevOffset.x) / prevZoom;
-                const worldY = (mouseY - prevOffset.y) / prevZoom;
-
-                return {
-                    x: mouseX - worldX * nextZoom,
-                    y: mouseY - worldY * nextZoom,
-                };
-            });
-
-            return nextZoom;
+        const rect = e.currentTarget.getBoundingClientRect();
+        setNewTaskPosition({
+            x: (e.clientX - rect.left - offset.x) / zoom,
+            y: (e.clientY - rect.top - offset.y) / zoom,
         });
+        setIsCreatingTask(true);
     }
+
 
     function zoomAtCenter(direction) {
         const rect = canvasRef.current.getBoundingClientRect();
-
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
-
         setZoom(prevZoom => {
-            const nextZoom = Math.min(
-                MAX_ZOOM,
-                Math.max(
-                    MIN_ZOOM,
-                    +(prevZoom + direction * ZOOM_STEP).toFixed(2)
-                )
-            );
-
+            const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, +(prevZoom + direction * ZOOM_STEP).toFixed(2)));
             setOffset(prevOffset => {
                 const worldX = (centerX - prevOffset.x) / prevZoom;
                 const worldY = (centerY - prevOffset.y) / prevZoom;
-
                 return {
                     x: centerX - worldX * nextZoom,
                     y: centerY - worldY * nextZoom,
                 };
             });
-
             return nextZoom;
         });
     }
@@ -287,47 +206,31 @@ function Board() {
             onDoubleClick={handleBoardDoubleClick}
             onContextMenu={(e) => e.preventDefault()}
             onMouseDown={(e) => {
+                if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
                 if (e.button !== 2) return;
                 if (isHoveringTask) return;
-
                 e.preventDefault();
-
                 setIsPanning(true);
                 panStartRef.current = {
                     x: e.clientX - offset.x,
                     y: e.clientY - offset.y,
                 };
-
             }}
-
             onMouseMove={(e) => {
+                if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
                 if (!isPanning) return;
-
-                const canvas = canvasRef.current;
-                if (!canvas) return;
-
-                const nextX = e.clientX - panStartRef.current.x;
-                const nextY = e.clientY - panStartRef.current.y;
-
                 setOffset({
-                    x: nextX,
-                    y: nextY,
+                    x: e.clientX - panStartRef.current.x,
+                    y: e.clientY - panStartRef.current.y,
                 });
-
-
             }}
-
             onMouseUp={() => setIsPanning(false)}
             onMouseLeave={() => setIsPanning(false)}
         >
-
             <div
                 className={styles.viewport}
                 style={{
-                    transform: `
-                        translate(${offset.x}px, ${offset.y}px)
-                        scale(${zoom})
-                    `,
+                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
                     transformOrigin: "0 0",
                 }}
             >
@@ -352,9 +255,9 @@ function Board() {
             </div>
 
             <div className={styles.zoomControls}>
-                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1) }}>+</button>
-                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1) }}>-</button>
-                <button onDoubleClick={(e) => { e.stopPropagation(); }} onClick={(e) => { e.stopPropagation(); resetView() }}>restore</button>
+                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1); }}><Minus size={14} /></button>
+                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1); }}><Plus size={14} /></button>
+                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); resetView(); }}><RotateCcw size={14} /></button>
             </div>
 
             <button
@@ -362,14 +265,12 @@ function Board() {
                 disabled={isFocusMode}
                 onClick={() => {
                     if (isFocusMode) return;
-                    const centerPosition = getViewportCenterWorld();
-                    setNewTaskPosition(centerPosition);
+                    setNewTaskPosition(getViewportCenterWorld());
                     setIsCreatingTask(true);
                 }}
             >
                 +
             </button>
-
 
             <div className={styles.hint}>
                 Haga doble clic en cualquier lugar para crear una nueva tarea
@@ -380,18 +281,8 @@ function Board() {
                     onClose={() => setIsCreatingTask(false)}
                     onCreate={(newTask) =>
                         setTasks((prevTasks) => {
-                            const freePosition = findFreePosition(
-                                newTask.position,
-                                prevTasks
-                            );
-
-                            return [
-                                ...prevTasks,
-                                {
-                                    ...newTask,
-                                    position: freePosition,
-                                },
-                            ];
+                            const freePosition = findFreePosition(newTask.position, prevTasks);
+                            return [...prevTasks, { ...newTask, position: freePosition }];
                         })
                     }
                     position={newTaskPosition}
@@ -401,17 +292,16 @@ function Board() {
             {isEditingTask && editingTask && (
                 <EditTaskModal
                     onClose={() => setIsEditingTask(false)}
-                    onSave={(updatedTask) =>
+                    onSave={(updatedTask) => {
                         setTasks((prevTasks) =>
-                            prevTasks.map(task =>
-                                task.id === updatedTask.id ? updatedTask : task
-                            )
-                        )
-                    }
+                            prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task)
+                        );
+                        setEditingTask(prev =>
+                            prev?.id === updatedTask.id ? updatedTask : prev
+                        );
+                    }}
                     onDelete={(taskId) =>
-                        setTasks((prevTasks) =>
-                            prevTasks.filter(task => task.id !== taskId)
-                        )
+                        setTasks((prevTasks) => prevTasks.filter(task => task.id !== taskId))
                     }
                     onComplete={(taskId) =>
                         setTasks((prevTasks) =>
@@ -423,16 +313,34 @@ function Board() {
                         )
                     }
                     task={editingTask}
+                    showToast={showToast}
                 />
             )}
 
             {toast && (
-                <div
-                    className={`${styles.toast} ${toastVisible ? styles.toastEnter : styles.toastExit
-                        }`}
-                >
+                <div className={`${styles.toast} ${toastVisible ? styles.toastEnter : styles.toastExit}`}>
                     {toast}
                 </div>
+            )}
+
+            {isFocusOverlayOpen && activeTask && (
+                <FocusOverlay
+                    activeTask={activeTask}
+                    onExit={onExitFocus}
+                    onUpdateTask={(updatedTask) =>
+                        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t))
+                    }
+                    onCompleteTask={(taskId) => {
+                        setTasks(prev =>
+                            prev.map(t =>
+                                t.id === taskId
+                                    ? { ...t, status: "completed", tags: [...(t.tags || []), "COMPLETED"] }
+                                    : t
+                            )
+                        );
+                        onExitFocus();
+                    }}
+                />
             )}
         </div>
     );

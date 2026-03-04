@@ -1,13 +1,55 @@
 import styles from "./createTaskModal.module.css";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
+function Dropdown({ value, options, onChange }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    return (
+        <div className={styles.dropdown} ref={ref}>
+            <button
+                type="button"
+                className={`${styles.dropdownTrigger} ${open ? styles.open : ""}`}
+                onClick={() => setOpen(!open)}
+            >
+                {value}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+            </button>
+            {open && (
+                <div className={styles.dropdownMenu}>
+                    {options.map(opt => (
+                        <button
+                            key={opt}
+                            type="button"
+                            className={`${styles.dropdownOption} ${value === opt ? styles.selected : ""}`}
+                            onClick={() => { onChange(opt); setOpen(false); }}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
 
 function CreateTaskModal({ onClose, onCreate, position }) {
-    
+
     const [form, setForm] = useState({
         title: "",
         description: "",
-        color: ""
+        color: "",
+        priority: "Medium"
     });
 
 
@@ -22,7 +64,7 @@ function CreateTaskModal({ onClose, onCreate, position }) {
             description: form.description,
             status: "todo",
             category: "General",
-            priority: "Medium",
+            priority: form.priority,
             createdAt: new Date().toISOString(),
             time: 0,
             timeActive: 0,
@@ -43,10 +85,10 @@ function CreateTaskModal({ onClose, onCreate, position }) {
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.field}>
-                        <label>Título *</label>
+
                         <input
                             type="text"
-                            placeholder="Ej: Estudiar React"
+                            placeholder="Titulo"
                             value={form.title}
                             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                             required
@@ -54,19 +96,26 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                     </div>
 
                     <div className={styles.field}>
-                        <label>Descripción</label>
+
                         <textarea
-                            placeholder="Opcional"
+                            placeholder="Descripción (Opcional)"
                             value={form.description}
                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         />
                     </div>
+                    <div className={styles.field}>
+                        <Dropdown
+                            value={form.priority}
+                            options={["Low", "Medium", "High"]}
+                            onChange={val => setForm(f => ({ ...f, priority: val }))}
+                        />
+                    </div>
 
                     <div className={styles.actions}>
-                        <button type="button" onClick={onClose}>
+                        <button className={styles.closeBtn} type="button" onClick={onClose}>
                             Cancelar
                         </button>
-                        <button type="submit">Crear</button>
+                        <button className={styles.createBtn} type="submit">Crear</button>
                     </div>
                 </form>
             </div>
