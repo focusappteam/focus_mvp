@@ -31,7 +31,7 @@ const ACCENT_COLORS = [
 
 // duration now comes from context
 
-function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast }) {
+function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast, onTimerComplete }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -46,6 +46,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
     isRunning,
     isStopwatch,
     canStart,
+    hasStarted,
     formattedTime,
     timerProgress,
     handleStart,
@@ -65,7 +66,10 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
   }, []);
 
   function handleStartTimer() {
-    handleStart((updatedTask) => onSave(updatedTask))
+    handleStart((updatedTask) => {
+      onSave(updatedTask);
+      onTimerComplete?.();
+    })
   }
 
   function handlePauseTimer() {
@@ -358,7 +362,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                   disabled={!canStart || task.status === "completed"}
                 >
                   <Play size={12} className={styles.playIcon} />
-                  {isRunning ? "Pause" : canStart ? "Start" : "Resume"}
+                  {isRunning ? "Pause" : hasStarted ? "Resume" : "Start"}
                 </button>
               )}
               <button

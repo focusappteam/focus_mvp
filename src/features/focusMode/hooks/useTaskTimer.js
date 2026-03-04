@@ -11,6 +11,12 @@ export function useTaskTimer(task) {
   const isThisTaskTimer = state.taskId === taskId;
   const isRunning = isThisTaskTimer && (timer?.isRunning ?? false);
   const isStopwatch = (timer?.mode ?? 'timer') === 'stopwatch';
+  const hasStarted = useMemo(() => {
+    if (!timer) return false;
+    return isStopwatch
+      ? (timer.elapsedTime ?? 0) > 0
+      : (timer.remainingTime ?? POMODORO_DURATION) < POMODORO_DURATION;
+  }, [timer, isStopwatch, POMODORO_DURATION]);
 
   // ¿Hay otra tarea corriendo? → este task no puede iniciar
   const canStart = useMemo(() => {
@@ -78,6 +84,7 @@ export function useTaskTimer(task) {
     isRunning,
     isStopwatch,
     canStart,
+    hasStarted,
     displaySeconds,
     formattedTime,
     timerProgress,

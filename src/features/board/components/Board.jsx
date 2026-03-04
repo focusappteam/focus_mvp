@@ -16,7 +16,7 @@ const TASK_HEIGHT = 60;
 const HEADER_HEIGHT = 1;
 
 
-function Board({ isFocusOverlayOpen, onExitFocus }) {
+function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -314,6 +314,7 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
                     }
                     task={editingTask}
                     showToast={showToast}
+                    onTimerComplete={onTimerComplete}
                 />
             )}
 
@@ -330,6 +331,7 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
                     onUpdateTask={(updatedTask) =>
                         setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t))
                     }
+                    onTimerComplete={onTimerComplete}
                     onCompleteTask={(taskId) => {
                         setTasks(prev =>
                             prev.map(t =>

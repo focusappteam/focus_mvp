@@ -2,27 +2,18 @@ import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 import FocusButton from "../../features/focusMode/components/FocusButton";
 import { useMemo } from "react";
+import { useTaskTimer } from "../../features/focusMode/hooks/useTaskTimer";
 
 function Header({ onEnterFocus }) {
-    const { state, POMODORO_DURATION } = useTimer();
+    const { state } = useTimer();
 
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
     const activeTask = useMemo(() => {
         if (!state.taskId) return null;
         const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
         return tasks.find(t => t.id === state.taskId) ?? null;
     }, [state.taskId]);
 
-    const activeTimer = state.taskId && state.timers[state.taskId];
-    const isStopwatch = activeTimer?.mode === 'stopwatch';
-    const currentTime = isStopwatch
-        ? activeTimer.elapsedTime || 0
-        : activeTimer?.remainingTime ?? POMODORO_DURATION;
-
+    const { formattedTime, isStopwatch, isRunning } = useTaskTimer(activeTask);
     return (
         <header className={styles.header}>
             <div className={styles.logo}>
@@ -31,17 +22,18 @@ function Header({ onEnterFocus }) {
             </div>
 
             <div className={styles.headerCenter}>
-                {activeTimer && (
+                {isRunning && (
                     <>
-                        <div className={styles.timerBadge}>{formatTime(currentTime)}</div>
+                        <div className={styles.timerBadge}>{formattedTime}</div>
                         <div className={styles.focusBadge}>{isStopwatch ? 'STOPWATCH' : 'CountDown'}</div>
+                        {activeTask && (
+                            <FocusButton
+                                activeTask={activeTask}
+                                onEnterFocus={onEnterFocus}
+                            />)}
                     </>
                 )}
-                {activeTask && (
-                    <FocusButton
-                        activeTask={activeTask}
-                        onEnterFocus={onEnterFocus}
-                    />)}
+
             </div>
 
 
