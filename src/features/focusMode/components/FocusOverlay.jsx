@@ -1,17 +1,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { X, Coffee, CheckCircle, Check } from "lucide-react";
-import { useTimer } from "../../../contexts/TimerContext";
 import styles from "../focus-mode.module.css";
+import { useFocusMode } from "../hooks/useFocusMode";
+
 
 const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
-  const { state, start, pause, POMODORO_DURATION } = useTimer();
+  const {
+    isRunning,
+    isBreak,
+    formattedTime,
+    breakFormattedTime,
+    handlePauseResume,
+    handleBreak,
+    handleBackToFocus,
+  } = useFocusMode(activeTask);
 
-  const timer = state.timers[activeTask?.id];
-  const isRunning = timer?.isRunning ?? false;
-  const isStopWatch = timer?.mode === 'stopwatch';
-
-  const [isBreak, setIsBreak] = useState(false);
-  const [breakTime, setBreakTime] = useState(5 * 60);
   const [checklist, setChecklist] = useState(activeTask?.checklist ?? []);
 
   const handleExit = useCallback(() => onExit(), [onExit]);
@@ -23,31 +26,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleExit]);
 
-  // Countdown del break (local, no necesita contexto)
-  useEffect(() => {
-    if (!isBreak) return;
-    const interval = setInterval(() => {
-      setBreakTime(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          setIsBreak(false);
-          return 5 * 60;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isBreak]);
-
   if (!activeTask) return null;
-
-  const displayTime = isBreak
-    ? breakTime
-    : isStopWatch
-      ? (timer?.elapsedTime ?? 0)
-      : (timer?.remainingTime ?? POMODORO_DURATION);
-  const minutes = String(Math.floor(displayTime / 60)).padStart(2, "0");
-  const seconds = String(displayTime % 60).padStart(2, "0");
 
   const completedSubtasks = checklist.filter(s => s.checked).length;
   const totalSubtasks = checklist.length;
@@ -66,25 +45,8 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
     onCompleteTask(activeTask.id);
     onExit();
   };
-
-  const handlePauseResume = () => {
-    if (isRunning) {
-      pause();
-    } else {
-      start(activeTask.id);
-    }
-  };
-
-  const handleBreak = () => {
-    if (isRunning) pause();
-    setIsBreak(true);
-    setBreakTime(5 * 60);
-  };
-
-  const handleBackToFocus = () => {
-    setIsBreak(false);
-    start(activeTask.id);
-  };
+  const displayTime = isBreak ? breakFormattedTime : formattedTime;
+  const [minutes, seconds] = displayTime.split(":")
 
   return (
     <div className={styles.overlay}>

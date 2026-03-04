@@ -1,16 +1,16 @@
 import { Timer } from "lucide-react";
-import { useTimer } from "../../../contexts/TimerContext";
 import styles from "../focus-mode.module.css";
+import { useFocusMode } from "../hooks/useFocusMode";
+
 
 const FocusButton = ({ onEnterFocus }) => {
-  const { state } = useTimer();
-  const isActive = state.taskId && state.timers[state.taskId]?.isRunning;
+  const { isFocusActive } = useFocusMode(null)
 
   return (
     <button
-      className={`${styles.focusBtn} ${!isActive ? styles.focusBtnDisabled : ""}`}
-      onClick={() => isActive && onEnterFocus()}
-      disabled={!isActive}
+      className={`${styles.focusBtn} ${!isFocusActive ? styles.focusBtnDisabled : ""}`}
+      onClick={() => isFocusActive && onEnterFocus()}
+      disabled={!isFocusActive}
     >
       <Timer size={14} /> FOCUS MODE
     </button>
