@@ -255,8 +255,8 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
             </div>
 
             <div className={styles.zoomControls}>
-                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1); }}><Minus size={14} /></button>
-                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1); }}><Plus size={14} /></button>
+                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAtCenter(-1); }}><Minus size={14} /></button>
+                <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); zoomAtCenter(1); }}><Plus size={14} /></button>
                 <button onDoubleClick={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); resetView(); }}><RotateCcw size={14} /></button>
             </div>
 
