@@ -16,7 +16,7 @@ import {
   Timer,
   Clock
 } from "lucide-react";
-import { useTimer } from "../../contexts/TimerContext";
+import { useTimer } from "../../../contexts/TimerContext";
 
 
 const ACCENT_COLORS = [

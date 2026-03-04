@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { X, Coffee, CheckCircle, Check } from "lucide-react";
 import { useTimer } from "../../../contexts/TimerContext";
-import styles from "./focus-mode.module.css";
+import styles from "../focus-mode.module.css";
 
 const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
   const { state, start, pause, POMODORO_DURATION } = useTimer();

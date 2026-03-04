@@ -1,5 +1,5 @@
 import Layout from "./components/layout/Layout";
-import Board from "./features/board/Board";
+import Board from "./features/board/components/Board";
 import { TimerProvider } from "./contexts/TimerContext";
 import { useState } from "react";
 

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useTimer } from "../../contexts/TimerContext";
-import styles from "./board.module.css";
+import { useTimer } from "../../../contexts/TimerContext";
+import styles from "../board.module.css";
 import Task from "./Task";
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 import { RotateCcw, Plus, Minus } from "lucide-react";
-import FocusOverlay from "./focus/FocusOverlay";
+import FocusOverlay from "../../focusMode/components/FocusOverlay";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;

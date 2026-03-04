@@ -1,6 +1,6 @@
 import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
-import FocusButton from "../../features/board/focus/FocusButton";
+import FocusButton from "../../features/focusMode/components/FocusButton";
 import { useMemo } from "react";
 
 function Header({ onEnterFocus }) {

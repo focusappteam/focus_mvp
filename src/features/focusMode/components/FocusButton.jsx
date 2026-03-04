@@ -1,6 +1,6 @@
 import { Timer } from "lucide-react";
 import { useTimer } from "../../../contexts/TimerContext";
-import styles from "./focus-mode.module.css";
+import styles from "../focus-mode.module.css";
 
 const FocusButton = ({ onEnterFocus }) => {
   const { state } = useTimer();
