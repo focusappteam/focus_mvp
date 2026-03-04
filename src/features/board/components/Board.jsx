@@ -7,6 +7,8 @@ import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 import { RotateCcw, Plus, Minus } from "lucide-react";
 import FocusOverlay from "../../focusMode/components/FocusOverlay";
+import Toast from "../../../components/UI/Toast";
+import { useToast } from "../../../hooks/useToast";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
@@ -20,12 +22,11 @@ function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [toast, setToast] = useState(null);
-    const [toastVisible, setToastVisible] = useState(false);
     const [tasks, setTasks] = useState(() => {
         const savedTasks = localStorage.getItem("tasks");
         return savedTasks ? JSON.parse(savedTasks) : [];
     });
+    const { toast, toastVisible, showToast } = useToast();
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [isEditingTask, setIsEditingTask] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
@@ -33,8 +34,6 @@ function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
     const [isHoveringTask, setIsHoveringTask] = useState(false);
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
     const panStartRef = useRef({ x: 0, y: 0 });
-    const toastTimeoutRef = useRef(null);
-    const toastCleanupRef = useRef(null);
     const isCreatingRef = useRef(false);
     const isEditingRef = useRef(false);
     useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
@@ -83,17 +82,6 @@ function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
         canvas.addEventListener("wheel", handleWheel, { passive: false });
         return () => canvas.removeEventListener("wheel", handleWheel);
     }, []);
-
-    function showToast(message) {
-        clearTimeout(toastTimeoutRef.current);
-        clearTimeout(toastCleanupRef.current);
-        setToast(message);
-        setToastVisible(true);
-        toastTimeoutRef.current = setTimeout(() => {
-            setToastVisible(false);
-            toastCleanupRef.current = setTimeout(() => setToast(null), 200);
-        }, 2000);
-    }
 
     function isColliding(a, b) {
         return !(
@@ -275,6 +263,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
             <div className={styles.hint}>
                 Haga doble clic en cualquier lugar para crear una nueva tarea
             </div>
+            <Toast message={toast} visible={toastVisible} />
 
             {isCreatingTask && (
                 <CreateTaskModal
@@ -313,16 +302,10 @@ function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
                         )
                     }
                     task={editingTask}
-                    showToast={showToast}
                     onTimerComplete={onTimerComplete}
                 />
             )}
 
-            {toast && (
-                <div className={`${styles.toast} ${toastVisible ? styles.toastEnter : styles.toastExit}`}>
-                    {toast}
-                </div>
-            )}
 
             {isFocusOverlayOpen && activeTask && (
                 <FocusOverlay

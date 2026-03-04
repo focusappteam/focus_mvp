@@ -17,7 +17,8 @@ import {
   Clock
 } from "lucide-react";
 import { useTaskTimer } from "../../focusMode/hooks/useTaskTimer";
-
+import { useToast } from "../../../hooks/useToast";
+import Toast from "../../../components/UI/Toast";
 
 
 
@@ -31,7 +32,7 @@ const ACCENT_COLORS = [
 
 // duration now comes from context
 
-function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast, onTimerComplete }) {
+function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, onTimerComplete }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -58,6 +59,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast,
   const [isAddingChecklist, setIsAddingChecklist] = useState(false);
   const [newTag, setNewTag] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const { toast, toastVisible, showToast } = useToast();
 
   useEffect(() => {
     if (Notification.permission === "default") {
@@ -438,6 +440,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast,
           </div>
         </div>
       </div>
+      <Toast message={toast} visible={toastVisible} />
     </div>
   );
 }
