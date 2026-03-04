@@ -1,9 +1,12 @@
 import styles from "./board.module.css";
 import { useDraggable } from "@dnd-kit/core";
 import React from "react";
+import {
+GripVertical
+} from "lucide-react";
 
 function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused }) {
-    const { id, title } = task;
+    const { id, title, tags, priority} = task;
     const { x = 0, y = 0 } = task.position || {};
 
     const { attributes, listeners, setNodeRef, transform } =
@@ -24,27 +27,46 @@ function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused }
     };
 
     return (
-        <div style={{ cursor: isBlocked ? "not-allowed" : undefined }}>
-            <div
-                ref={setNodeRef}
-                className={`
+      <div style={{ cursor: isBlocked ? "not-allowed" : undefined }}>
+        <div
+          ref={setNodeRef}
+          className={`
                 ${styles.task}
                 ${task.status === "completed" ? styles.taskCompleted : ""}
             `}
-                style={style}
-                {...listeners}
-                {...attributes}
-                onMouseEnter={() => !isBlocked && onHoverChange(true)}
-                onMouseLeave={() => onHoverChange(false)}
-                onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    if (isBlocked) return;
-                    onDoubleClick(task);
-                }}
-            >
-                {title}
+          style={style}
+          {...listeners}
+          {...attributes}
+          onMouseEnter={() => !isBlocked && onHoverChange(true)}
+          onMouseLeave={() => onHoverChange(false)}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            if (isBlocked) return;
+            onDoubleClick(task);
+          }}
+        >
+          <div className={styles.upperSection}>
+            <div className={`${styles.priority} ${styles[priority]}`}>
+              <p>{priority}</p>
             </div>
+            <div className={styles.icon_container}>
+              <GripVertical className={styles.icon} size={20} />
+            </div>
+          </div>
+          <h3 className={styles.title}>{title}</h3>
+          <div className={styles.tags_container}>
+            {
+            //
+            tags.slice(0,5).map((tag, index) => (
+              <span className={styles.tag} key={index}>
+                {tag}
+              </span>
+            ))
+            
+            }
+          </div>
         </div>
+      </div>
     );
 }
 
