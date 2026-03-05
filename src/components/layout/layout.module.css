@@ -84,51 +84,130 @@
 .sidebar {
     width: 220px;
     flex-shrink: 0;
-    background: var(--color-background);
-    color: var(--color-primary);
-    padding: 20px;
+    background: #ffffff;
+    padding: 20px 12px;
     border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .sidebarTitle {
-    font-size: 12px;
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    color: #6b7280;
-    margin-bottom: 12px;
+    letter-spacing: 0.07em;
+    color: #9ca3af;
+    margin: 0 0 8px 4px;
 }
 
 .navList {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .navItem {
-    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
     border-radius: 8px;
     cursor: pointer;
-    margin-bottom: 4px;
+    font-size: 13.5px;
+    color: #374151;
+    transition: background 0.13s ease, color 0.13s ease;
+    position: relative;
 }
 
 .navItem:hover {
-    background: #e5e7eb;
+    background: #f3f4f6;
+}
+
+.navIcon {
+    display: flex;
+    align-items: center;
+    color: #6b7280;
+    flex-shrink: 0;
+    transition: color 0.13s ease;
+}
+
+.navLabel {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navChevron {
+    color: #9ca3af;
+    flex-shrink: 0;
 }
 
 .active {
-    background: rgba(76, 111, 112, 0.12);
+    background: rgba(76, 111, 112, 0.10);
+    color: var(--color-primary);
     font-weight: 600;
 }
 
+.active .navIcon {
+    color: var(--color-primary);
+}
+
+/* Create button */
+
 .createButton {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    border: none;
-    background: #f7f7f7;
-    color: #7F8E8E;
-    font-weight: 600;
-    margin-bottom: 20px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px dashed #d1d5db;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
+    margin-top: 8px;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.createButton:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(76, 111, 112, 0.05);
+}
+
+/* Create input */
+
+.createInputWrapper {
+    margin-top: 8px;
+    padding: 2px;
+}
+
+.createInput {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--color-primary);
+    background: rgba(76, 111, 112, 0.05);
+    font-size: 13px;
+    color: #374151;
+    outline: none;
+    box-sizing: border-box;
+    transition: box-shadow 0.15s ease;
+}
+
+.createInput:focus {
+    box-shadow: 0 0 0 3px rgba(76, 111, 112, 0.15);
+}
+
+.createInput::placeholder {
+    color: #9ca3af;
 }
 
 /* main */

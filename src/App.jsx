@@ -5,11 +5,14 @@ import { useState } from "react";
 
 function App() {
   const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
+
   return (
     <TimerProvider>
       <Layout onEnterFocus={() => setIsFocusOverlayOpen(true)}>
-        <Board isFocusOverlayOpen={isFocusOverlayOpen}
-          onExitFocus={() => setIsFocusOverlayOpen(false)} />
+        <Board
+          isFocusOverlayOpen={isFocusOverlayOpen}
+          onExitFocus={() => setIsFocusOverlayOpen(false)}
+        />
       </Layout>
     </TimerProvider>
   );
