@@ -199,9 +199,11 @@
     background: #eef2f1;
     color: #6b7280;
     border: 1px solid rgba(0, 0, 0, 0.04);
-    text-decoration: line-through;
     opacity: 0.75;
     transition: all 0.2s ease;
+}
+.taskCompleted h3{
+    text-decoration: line-through;
 }
 
 .taskCompleted:hover {
