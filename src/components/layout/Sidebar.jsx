@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./layout.module.css";
 import { LayoutGrid, Plus, GripVertical } from "lucide-react";
+import { useBoard } from "../../contexts/BoardContext";
 import {
     DndContext,
     closestCenter,
@@ -16,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+// ---------- Context Menu ----------
 function ContextMenu({ x, y, onRename, onDelete, onClose }) {
     const ref = useRef(null);
 
@@ -35,31 +37,21 @@ function ContextMenu({ x, y, onRename, onDelete, onClose }) {
     }, [onClose]);
 
     return (
-        <div
-            ref={ref}
-            className={styles.contextMenu}
-            style={{ top: y, left: x }}
-        >
+        <div ref={ref} className={styles.contextMenu} style={{ top: y, left: x }}>
             <button className={styles.contextMenuItem} onClick={onRename}>
-                Renombrar
+                ✏️ Renombrar
             </button>
             <div className={styles.contextMenuDivider} />
             <button className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`} onClick={onDelete}>
-                Eliminar
+                🗑️ Eliminar
             </button>
         </div>
     );
 }
 
-function SortableWorkspaceItem({ ws, isRenaming, onContextMenu, onRenameSubmit, onRenameCancel }) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-        isDragging,
-    } = useSortable({ id: ws.id });
+// ---------- Sortable Item ----------
+function SortableWorkspaceItem({ ws, isActive, isRenaming, onContextMenu, onRenameSubmit, onRenameCancel, onSelect }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ws.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -87,17 +79,11 @@ function SortableWorkspaceItem({ ws, isRenaming, onContextMenu, onRenameSubmit, 
         <li
             ref={setNodeRef}
             style={style}
-            className={styles.navItem}
-            onContextMenu={(e) => {
-                e.preventDefault();
-                onContextMenu(e, ws.id);
-            }}
+            className={`${styles.navItem} ${isActive ? styles.active : ""}`}
+            onClick={() => !isRenaming && onSelect(ws.id)}
+            onContextMenu={(e) => { e.preventDefault(); onContextMenu(e, ws.id); }}
         >
-            <span
-                className={styles.dragHandle}
-                {...attributes}
-                {...listeners}
-            >
+            <span className={styles.dragHandle} {...attributes} {...listeners}>
                 <GripVertical size={13} />
             </span>
 
@@ -120,32 +106,32 @@ function SortableWorkspaceItem({ ws, isRenaming, onContextMenu, onRenameSubmit, 
     );
 }
 
+// ---------- Sidebar ----------
 function Sidebar() {
-    const [workspaces, setWorkspaces] = useState(() => {
-        const saved = localStorage.getItem("workspaces");
-        return saved ? JSON.parse(saved) : [];
-    });
+    const {
+        workspaces,
+        activeWorkspaceId,
+        createWorkspace,
+        renameWorkspace,
+        deleteWorkspace,
+        reorderWorkspaces,
+        selectWorkspace,
+    } = useBoard();
+
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState("");
     const [contextMenu, setContextMenu] = useState(null);
     const [renamingId, setRenamingId] = useState(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: { distance: 6 },
-        })
+        useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
     );
-
-    function save(updated) {
-        setWorkspaces(updated);
-        localStorage.setItem("workspaces", JSON.stringify(updated));
-    }
 
     function handleCreate() {
         const trimmed = newName.trim();
         if (!trimmed) { setIsCreating(false); return; }
-        const updated = [...workspaces, { id: `ws-${Date.now()}`, name: trimmed }];
-        save(updated);
+        const newWs = createWorkspace(trimmed);
+        selectWorkspace(newWs.id);
         setNewName("");
         setIsCreating(false);
     }
@@ -159,16 +145,13 @@ function Sidebar() {
         setContextMenu({ x: e.clientX, y: e.clientY, wsId });
     }
 
-    function handleRename(value) {
-        const trimmed = value.trim();
-        if (trimmed) {
-            save(workspaces.map(ws => ws.id === renamingId ? { ...ws, name: trimmed } : ws));
-        }
+    function handleRenameSubmit(value) {
+        renameWorkspace(renamingId, value);
         setRenamingId(null);
     }
 
     function handleDelete(wsId) {
-        save(workspaces.filter(ws => ws.id !== wsId));
+        deleteWorkspace(wsId);
         setContextMenu(null);
     }
 
@@ -177,31 +160,26 @@ function Sidebar() {
         if (!over || active.id === over.id) return;
         const oldIndex = workspaces.findIndex(ws => ws.id === active.id);
         const newIndex = workspaces.findIndex(ws => ws.id === over.id);
-        save(arrayMove(workspaces, oldIndex, newIndex));
+        reorderWorkspaces(arrayMove(workspaces, oldIndex, newIndex));
     }
 
     return (
         <aside className={styles.sidebar}>
             <p className={styles.sidebarTitle}>Workspaces</p>
 
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                <SortableContext
-                    items={workspaces.map(ws => ws.id)}
-                    strategy={verticalListSortingStrategy}
-                >
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={workspaces.map(ws => ws.id)} strategy={verticalListSortingStrategy}>
                     <ul className={styles.navList}>
                         {workspaces.map(ws => (
                             <SortableWorkspaceItem
                                 key={ws.id}
                                 ws={ws}
+                                isActive={ws.id === activeWorkspaceId}
                                 isRenaming={renamingId === ws.id}
                                 onContextMenu={handleContextMenu}
-                                onRenameSubmit={handleRename}
+                                onRenameSubmit={handleRenameSubmit}
                                 onRenameCancel={() => setRenamingId(null)}
+                                onSelect={selectWorkspace}
                             />
                         ))}
                     </ul>
@@ -231,10 +209,7 @@ function Sidebar() {
                 <ContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}
-                    onRename={() => {
-                        setRenamingId(contextMenu.wsId);
-                        setContextMenu(null);
-                    }}
+                    onRename={() => { setRenamingId(contextMenu.wsId); setContextMenu(null); }}
                     onDelete={() => handleDelete(contextMenu.wsId)}
                     onClose={() => setContextMenu(null)}
                 />

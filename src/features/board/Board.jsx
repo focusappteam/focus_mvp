@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTimer } from "../../contexts/TimerContext";
+import { useBoard } from "../../contexts/BoardContext";
 import styles from "./board.module.css";
 import Task from "./Task";
 import CreateTaskModal from "./CreateTaskModal";
@@ -15,17 +16,14 @@ const TASK_WIDTH = 260;
 const TASK_HEIGHT = 60;
 const HEADER_HEIGHT = 1;
 
-
 function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
+    const { tasks, addTask, updateTask, deleteTask, completeTask, activeWorkspaceId } = useBoard();
+
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [toast, setToast] = useState(null);
     const [toastVisible, setToastVisible] = useState(false);
-    const [tasks, setTasks] = useState(() => {
-        const savedTasks = localStorage.getItem("tasks");
-        return savedTasks ? JSON.parse(savedTasks) : [];
-    });
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [isEditingTask, setIsEditingTask] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
@@ -40,6 +38,12 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
     useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
     useEffect(() => { isEditingRef.current = isEditingTask; }, [isEditingTask]);
 
+    // Reset view when switching workspaces
+    useEffect(() => {
+        setZoom(1);
+        setOffset({ x: 0, y: 0 });
+    }, [activeWorkspaceId]);
+
     const { state: timerState } = useTimer();
     const activeTask = useMemo(() => tasks.find(t => t.id === timerState.taskId) ?? null, [tasks, timerState.taskId]);
     const focusedTaskId = useMemo(() =>
@@ -48,10 +52,6 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
             : null, [timerState.taskId, timerState.timers]);
 
     const isFocusMode = focusedTaskId !== null;
-
-    useEffect(() => {
-        localStorage.setItem("tasks", JSON.stringify(tasks));
-    }, [tasks]);
 
     function handleWheel(e) {
         if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
@@ -74,6 +74,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
             return nextZoom;
         });
     }
+
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -101,17 +102,14 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
         );
     }
 
-    function findFreePosition(initialPosition, tasks) {
+    function findFreePosition(initialPosition, taskList) {
         let testPosition = { ...initialPosition };
         const GAP = 20;
         let collision = true;
         while (collision) {
-            collision = tasks.some(task => isColliding(testPosition, task.position));
+            collision = taskList.some(task => isColliding(testPosition, task.position));
             if (collision) {
-                testPosition = {
-                    x: testPosition.x,
-                    y: testPosition.y + TASK_HEIGHT + GAP,
-                };
+                testPosition = { x: testPosition.x, y: testPosition.y + TASK_HEIGHT + GAP };
             }
         }
         return testPosition;
@@ -129,45 +127,42 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
 
     function handleDragEnd(event) {
         const { active, delta } = event;
-        setTasks((prevTasks) => {
-            const activeTask = prevTasks.find(t => t.id === active.id);
-            if (!activeTask) return prevTasks;
+        const activeTaskData = tasks.find(t => t.id === active.id);
+        if (!activeTaskData) return;
 
-            const rawX = (activeTask.position?.x || 0) + delta.x / zoom;
-            const rawY = (activeTask.position?.y || 0) + delta.y / zoom;
+        const rawX = (activeTaskData.position?.x || 0) + delta.x / zoom;
+        const rawY = (activeTaskData.position?.y || 0) + delta.y / zoom;
+        const minVisibleY = (HEADER_HEIGHT - offset.y) / zoom;
+        const minVisibleX = (-offset.x) / zoom;
 
-            const minVisibleY = (HEADER_HEIGHT - offset.y) / zoom;
-            const minVisibleX = (-offset.x) / zoom;
+        if (rawY < minVisibleY) {
+            showToast("Esta tarea no puede ser ubicada aqui");
+            return;
+        }
+        if (sidebarOpen && rawX < minVisibleX) {
+            showToast("Esta tarea no puede ser ubicada aqui");
+            return;
+        }
 
-            if (rawY < minVisibleY) {
-                showToast("Esta tarea no puede ser ubicada aqui");
-                return prevTasks;
-            }
+        const newPosition = { x: rawX, y: rawY };
+        const hasCollision = tasks.some(t =>
+            t.id !== active.id && isColliding(newPosition, t.position)
+        );
+        if (hasCollision) {
+            showToast("La tarea no puede ubicarse sobre otra");
+            return;
+        }
 
-            if (sidebarOpen && rawX < minVisibleX) {
-                showToast("Esta tarea no puede ser ubicada aqui");
-                return prevTasks;
-            }
-
-            const newPosition = { x: rawX, y: rawY };
-            const hasCollision = prevTasks.some(task =>
-                task.id !== active.id && isColliding(newPosition, task.position)
-            );
-
-            if (hasCollision) {
-                showToast("La tarea no puede ubicarse sobre otra");
-                return prevTasks;
-            }
-
-            return prevTasks.map(task =>
-                task.id === active.id ? { ...task, position: newPosition } : task
-            );
-        });
+        updateTask({ ...activeTaskData, position: newPosition });
     }
 
     function handleBoardDoubleClick(e) {
         if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
         if (isFocusMode) return;
+        if (!activeWorkspaceId) {
+            showToast("Selecciona un workspace primero");
+            return;
+        }
         const rect = e.currentTarget.getBoundingClientRect();
         setNewTaskPosition({
             x: (e.clientX - rect.left - offset.x) / zoom,
@@ -212,28 +207,19 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                 if (isHoveringTask) return;
                 e.preventDefault();
                 setIsPanning(true);
-                panStartRef.current = {
-                    x: e.clientX - offset.x,
-                    y: e.clientY - offset.y,
-                };
+                panStartRef.current = { x: e.clientX - offset.x, y: e.clientY - offset.y };
             }}
             onMouseMove={(e) => {
                 if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
                 if (!isPanning) return;
-                setOffset({
-                    x: e.clientX - panStartRef.current.x,
-                    y: e.clientY - panStartRef.current.y,
-                });
+                setOffset({ x: e.clientX - panStartRef.current.x, y: e.clientY - panStartRef.current.y });
             }}
             onMouseUp={() => setIsPanning(false)}
             onMouseLeave={() => setIsPanning(false)}
         >
             <div
                 className={styles.viewport}
-                style={{
-                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-                    transformOrigin: "0 0",
-                }}
+                style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: "0 0" }}
             >
                 <div className={styles.world}>
                     <DndContext onDragEnd={handleDragEnd}>
@@ -243,10 +229,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                                 task={task}
                                 zoom={zoom}
                                 onHoverChange={setIsHoveringTask}
-                                onDoubleClick={(task) => {
-                                    setEditingTask(task);
-                                    setIsEditingTask(true);
-                                }}
+                                onDoubleClick={(t) => { setEditingTask(t); setIsEditingTask(true); }}
                                 isBlocked={isFocusMode && task.id !== focusedTaskId}
                                 isFocused={task.id === focusedTaskId}
                             />
@@ -263,9 +246,9 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
 
             <button
                 className={styles.createTaskButton}
-                disabled={isFocusMode}
+                disabled={isFocusMode || !activeWorkspaceId}
                 onClick={() => {
-                    if (isFocusMode) return;
+                    if (isFocusMode || !activeWorkspaceId) return;
                     setNewTaskPosition(getViewportCenterWorld());
                     setIsCreatingTask(true);
                 }}
@@ -274,18 +257,18 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
             </button>
 
             <div className={styles.hint}>
-                Haga doble clic en cualquier lugar para crear una nueva tarea
+                {activeWorkspaceId
+                    ? "Haga doble clic en cualquier lugar para crear una nueva tarea"
+                    : "Selecciona o crea un workspace para empezar"}
             </div>
 
             {isCreatingTask && (
                 <CreateTaskModal
                     onClose={() => setIsCreatingTask(false)}
-                    onCreate={(newTask) =>
-                        setTasks((prevTasks) => {
-                            const freePosition = findFreePosition(newTask.position, prevTasks);
-                            return [...prevTasks, { ...newTask, position: freePosition }];
-                        })
-                    }
+                    onCreate={(newTask) => {
+                        const freePosition = findFreePosition(newTask.position, tasks);
+                        addTask({ ...newTask, position: freePosition });
+                    }}
                     position={newTaskPosition}
                 />
             )}
@@ -294,25 +277,11 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                 <EditTaskModal
                     onClose={() => setIsEditingTask(false)}
                     onSave={(updatedTask) => {
-                        setTasks((prevTasks) =>
-                            prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task)
-                        );
-                        setEditingTask(prev =>
-                            prev?.id === updatedTask.id ? updatedTask : prev
-                        );
+                        updateTask(updatedTask);
+                        setEditingTask(prev => prev?.id === updatedTask.id ? updatedTask : prev);
                     }}
-                    onDelete={(taskId) =>
-                        setTasks((prevTasks) => prevTasks.filter(task => task.id !== taskId))
-                    }
-                    onComplete={(taskId) =>
-                        setTasks((prevTasks) =>
-                            prevTasks.map(task =>
-                                task.id === taskId && task.status !== "completed"
-                                    ? { ...task, status: "completed", tags: [...(task.tags || []), "COMPLETED"] }
-                                    : task
-                            )
-                        )
-                    }
+                    onDelete={(taskId) => deleteTask(taskId)}
+                    onComplete={(taskId) => completeTask(taskId)}
                     task={editingTask}
                     showToast={showToast}
                 />
@@ -328,17 +297,9 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                 <FocusOverlay
                     activeTask={activeTask}
                     onExit={onExitFocus}
-                    onUpdateTask={(updatedTask) =>
-                        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t))
-                    }
+                    onUpdateTask={updateTask}
                     onCompleteTask={(taskId) => {
-                        setTasks(prev =>
-                            prev.map(t =>
-                                t.id === taskId
-                                    ? { ...t, status: "completed", tags: [...(t.tags || []), "COMPLETED"] }
-                                    : t
-                            )
-                        );
+                        completeTask(taskId);
                         onExitFocus();
                     }}
                 />
