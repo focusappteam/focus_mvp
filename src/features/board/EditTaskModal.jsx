@@ -47,8 +47,12 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
 
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isAddingChecklist, setIsAddingChecklist] = useState(false);
+  const [editingChecklistIndex, setEditingChecklistIndex] = useState(null);
+  const [editingChecklistValue, setEditingChecklistValue] = useState("");
   const [newTag, setNewTag] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [editingTagIndex, setEditingTagIndex] = useState(null);
+  const [editingTagValue, setEditingTagValue] = useState("");
 
   // Timer state is stored in a global context
   const { state: timerState, start, pause, reset, toggleMode, POMODORO_DURATION } = useTimer();
@@ -164,6 +168,35 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
     setForm(f => ({ ...f, checklist: newChecklist }));
   }
 
+  function handleChecklistTextClick(index, e) {
+    e.stopPropagation();
+    setEditingChecklistIndex(index);
+    setEditingChecklistValue(form.checklist[index].text);
+  }
+
+  function commitChecklistEdit() {
+    if (editingChecklistValue.trim() && editingChecklistIndex !== null) {
+      const newChecklist = [...form.checklist];
+      newChecklist[editingChecklistIndex] = {
+        ...newChecklist[editingChecklistIndex],
+        text: editingChecklistValue.trim()
+      };
+      setForm(f => ({ ...f, checklist: newChecklist }));
+    }
+    setEditingChecklistIndex(null);
+    setEditingChecklistValue("");
+  }
+
+  function handleEditChecklistItem(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitChecklistEdit();
+    } else if (e.key === "Escape") {
+      setEditingChecklistIndex(null);
+      setEditingChecklistValue("");
+    }
+  }
+
   function commitChecklistItem() {
     if (newChecklistItem.trim()) {
       setForm(f => ({
@@ -199,6 +232,43 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
     } else if (e.key === "Escape") {
       setNewTag("");
       setIsAddingTag(false);
+    }
+  }
+
+  function handleRemoveTag(index, e) {
+    e.stopPropagation();
+    const newTags = form.tags.filter((_, i) => i !== index);
+    setForm(f => ({ ...f, tags: newTags }));
+  }
+
+  function handleTagClick(index, e) {
+    e.stopPropagation();
+    setEditingTagIndex(index);
+    setEditingTagValue(form.tags[index]);
+  }
+
+  function commitTagEdit() {
+    if (editingTagValue.trim() && editingTagIndex !== null) {
+      const newValue = editingTagValue.trim().toUpperCase();
+      // Only update if not a duplicate (except for same index)
+      const isDuplicate = form.tags.some((tag, i) => i !== editingTagIndex && tag === newValue);
+      if (!isDuplicate) {
+        const newTags = [...form.tags];
+        newTags[editingTagIndex] = newValue;
+        setForm(f => ({ ...f, tags: newTags }));
+      }
+    }
+    setEditingTagIndex(null);
+    setEditingTagValue("");
+  }
+
+  function handleEditTag(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitTagEdit();
+    } else if (e.key === "Escape") {
+      setEditingTagIndex(null);
+      setEditingTagValue("");
     }
   }
 
@@ -318,7 +388,25 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                       <Check size={12} className={styles.checkmark} />
                     )}
                   </div>
-                  <span className={styles.checklistText}>{item.text}</span>
+                  {editingChecklistIndex === index ? (
+                    <input
+                      type="text"
+                      className={styles.checklistEditInput}
+                      value={editingChecklistValue}
+                      onChange={(e) => setEditingChecklistValue(e.target.value)}
+                      onKeyDown={handleEditChecklistItem}
+                      onBlur={commitChecklistEdit}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className={styles.checklistText}
+                      onClick={(e) => handleChecklistTextClick(index, e)}
+                    >
+                      {item.text}
+                    </span>
+                  )}
                   <button
                     className={styles.removeChecklistItem}
                     onClick={(e) => handleRemoveChecklistItem(index, e)}
@@ -359,9 +447,32 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
           {/* Tags Section */}
           <div className={styles.tagsSection}>
             {form.tags.map((tag, index) => (
-              <span key={index} className={`${styles.tag}`}>
-                #{tag}
-              </span>
+              editingTagIndex === index ? (
+                <input
+                  key={index}
+                  type="text"
+                  className={styles.tagEditInput}
+                  value={editingTagValue}
+                  onChange={(e) => setEditingTagValue(e.target.value)}
+                  onKeyDown={handleEditTag}
+                  onBlur={commitTagEdit}
+                  autoFocus
+                />
+              ) : (
+                <span
+                  key={index}
+                  className={`${styles.tag}`}
+                  onClick={(e) => handleTagClick(index, e)}
+                >
+                  #{tag}
+                  <button
+                    className={styles.removeTag}
+                    onClick={(e) => handleRemoveTag(index, e)}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )
             ))}
 
             {isAddingTag ? (

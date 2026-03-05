@@ -175,6 +175,24 @@
     font-size: 14px;
     color: #374151;
     flex: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.checklistText:hover {
+    background-color: #f3f4f6;
+}
+
+.checklistEditInput {
+    font-size: 14px;
+    flex: 1;
+    border-radius: 4px;
+    padding: 2px 4px;
+    outline: none;
+    border: none;
+    background: transparent;
 }
 
 .checklistItem.checked .checklistText {
@@ -267,6 +285,37 @@
     color: #6b7280;
     border-color: #d1d5db;
     background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.tag:hover {
+    border-color: #9ca3af;
+}
+
+.removeTag {
+    background: none;
+    border: none;
+    padding: 2px;
+    color: #9ca3af;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+    opacity: 0;
+}
+
+.tag:hover .removeTag {
+    opacity: 1;
+}
+
+.removeTag:hover {
+    color: #ef6b5a;
 }
 
 .addTagButton {
@@ -299,6 +348,20 @@
     text-transform: uppercase;
     outline: none;
     width: 120px;
+}
+
+.tagEditInput {
+    padding: 6px 14px;
+    border: 2px solid #4a5e52;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    outline: none;
+    width: 100px;
+    color: #6b7280;
+    background: transparent;
 }
 
 /* Right Panel - Sidebar */
