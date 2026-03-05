@@ -39,11 +39,11 @@ function ContextMenu({ x, y, onRename, onDelete, onClose }) {
     return (
         <div ref={ref} className={styles.contextMenu} style={{ top: y, left: x }}>
             <button className={styles.contextMenuItem} onClick={onRename}>
-                ✏️ Renombrar
+                Renombrar
             </button>
             <div className={styles.contextMenuDivider} />
             <button className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`} onClick={onDelete}>
-                🗑️ Eliminar
+                Eliminar
             </button>
         </div>
     );
