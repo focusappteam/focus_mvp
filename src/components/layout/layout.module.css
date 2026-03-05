@@ -3,7 +3,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-}   
+}
 
 /* HEADER */
 
@@ -19,6 +19,38 @@
     overflow: hidden;
     background-color: #FFFFFF;
     color: var(--color-dark);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.hamburger:hover {
+    background: #f3f4f6;
+    color: var(--color-primary);
+}
+
+.hamburgerActive {
+    color: var(--color-primary);
+    background: rgba(76, 111, 112, 0.08);
 }
 
 .headerCenter {
@@ -79,17 +111,32 @@
     font-weight: 600;
 }
 
+/* SIDEBAR WRAPPER — handles show/hide with slide animation */
+
+.sidebarWrapper {
+    width: 0;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: width 0.25s ease;
+}
+
+.sidebarWrapperOpen {
+    width: 220px;
+}
+
 /* SIDEBAR */
 
 .sidebar {
     width: 220px;
-    flex-shrink: 0;
+    height: 100%;
     background: #ffffff;
     padding: 20px 12px;
     border-right: 1px solid #e5e7eb;
     display: flex;
     flex-direction: column;
     gap: 4px;
+    position: relative;
+    box-sizing: border-box;
 }
 
 .sidebarTitle {
@@ -113,13 +160,13 @@
 .navItem {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 8px 10px;
+    gap: 7px;
+    padding: 7px 8px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 13.5px;
     color: #374151;
-    transition: background 0.13s ease, color 0.13s ease;
+    transition: background 0.13s ease;
     position: relative;
 }
 
@@ -127,12 +174,30 @@
     background: #f3f4f6;
 }
 
+.navItem:hover .dragHandle {
+    opacity: 1;
+}
+
+.dragHandle {
+    display: flex;
+    align-items: center;
+    color: #cbd5e1;
+    cursor: grab;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    flex-shrink: 0;
+    touch-action: none;
+}
+
+.dragHandle:active {
+    cursor: grabbing;
+}
+
 .navIcon {
     display: flex;
     align-items: center;
-    color: #6b7280;
+    color: #9ca3af;
     flex-shrink: 0;
-    transition: color 0.13s ease;
 }
 
 .navLabel {
@@ -142,19 +207,17 @@
     text-overflow: ellipsis;
 }
 
-.navChevron {
-    color: #9ca3af;
-    flex-shrink: 0;
-}
-
-.active {
-    background: rgba(76, 111, 112, 0.10);
-    color: var(--color-primary);
-    font-weight: 600;
-}
-
-.active .navIcon {
-    color: var(--color-primary);
+.renameInput {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--color-primary);
+    background: transparent;
+    font-size: 13.5px;
+    color: #374151;
+    outline: none;
+    padding: 0;
+    min-width: 0;
+    font-family: inherit;
 }
 
 /* Create button */
@@ -200,6 +263,7 @@
     outline: none;
     box-sizing: border-box;
     transition: box-shadow 0.15s ease;
+    font-family: inherit;
 }
 
 .createInput:focus {
@@ -208,6 +272,67 @@
 
 .createInput::placeholder {
     color: #9ca3af;
+}
+
+/* Context Menu */
+
+.contextMenu {
+    position: absolute;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+    padding: 4px;
+    z-index: 200;
+    min-width: 160px;
+    animation: contextMenuIn 0.12s ease-out;
+}
+
+@keyframes contextMenuIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.contextMenuItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s ease;
+    font-family: inherit;
+}
+
+.contextMenuItem:hover {
+    background: #f3f4f6;
+}
+
+.contextMenuItemDanger {
+    color: #dc2626;
+}
+
+.contextMenuItemDanger:hover {
+    background: #fef2f2;
+}
+
+.contextMenuDivider {
+    height: 1px;
+    background: #f3f4f6;
+    margin: 3px 0;
 }
 
 /* main */
@@ -228,7 +353,7 @@
 }
 
 @media (max-width: 1024px) {
-    .sidebar {
+    .sidebarWrapper {
         display: none;
     }
 }

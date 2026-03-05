@@ -16,7 +16,7 @@ const TASK_HEIGHT = 60;
 const HEADER_HEIGHT = 1;
 
 
-function Board({ isFocusOverlayOpen, onExitFocus }) {
+function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -40,7 +40,6 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
     useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
     useEffect(() => { isEditingRef.current = isEditingTask; }, [isEditingTask]);
 
-    // --- Fuente de verdad: TimerContext ---
     const { state: timerState } = useTimer();
     const activeTask = useMemo(() => tasks.find(t => t.id === timerState.taskId) ?? null, [tasks, timerState.taskId]);
     const focusedTaskId = useMemo(() =>
@@ -48,13 +47,11 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
             ? timerState.taskId
             : null, [timerState.taskId, timerState.timers]);
 
-
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
-
 
     function handleWheel(e) {
         if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
@@ -138,9 +135,16 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
 
             const rawX = (activeTask.position?.x || 0) + delta.x / zoom;
             const rawY = (activeTask.position?.y || 0) + delta.y / zoom;
+
             const minVisibleY = (HEADER_HEIGHT - offset.y) / zoom;
+            const minVisibleX = (-offset.x) / zoom;
 
             if (rawY < minVisibleY) {
+                showToast("Esta tarea no puede ser ubicada aqui");
+                return prevTasks;
+            }
+
+            if (sidebarOpen && rawX < minVisibleX) {
                 showToast("Esta tarea no puede ser ubicada aqui");
                 return prevTasks;
             }
@@ -161,8 +165,6 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
         });
     }
 
-
-
     function handleBoardDoubleClick(e) {
         if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
         if (isFocusMode) return;
@@ -173,7 +175,6 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
         });
         setIsCreatingTask(true);
     }
-
 
     function zoomAtCenter(direction) {
         const rect = canvasRef.current.getBoundingClientRect();

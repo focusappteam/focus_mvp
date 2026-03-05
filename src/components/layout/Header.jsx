@@ -2,8 +2,9 @@ import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 import FocusButton from "../../features/board/focus/FocusButton";
 import { useMemo } from "react";
+import { Menu } from "lucide-react";
 
-function Header({ onEnterFocus }) {
+function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     const { state, POMODORO_DURATION } = useTimer();
 
     const formatTime = (seconds) => {
@@ -11,6 +12,7 @@ function Header({ onEnterFocus }) {
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
+
     const activeTask = useMemo(() => {
         if (!state.taskId) return null;
         const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
@@ -25,9 +27,18 @@ function Header({ onEnterFocus }) {
 
     return (
         <header className={styles.header}>
-            <div className={styles.logo}>
-                <span className={styles.logoPrimary}>FOCUS</span>
-                <span className={styles.logoSecondary}>.app</span>
+            <div className={styles.headerLeft}>
+                <button
+                    className={`${styles.hamburger} ${sidebarOpen ? styles.hamburgerActive : ""}`}
+                    onClick={onToggleSidebar}
+                    title={sidebarOpen ? "Cerrar sidebar" : "Abrir sidebar"}
+                >
+                    <Menu size={18} />
+                </button>
+                <div className={styles.logo}>
+                    <span className={styles.logoPrimary}>FOCUS</span>
+                    <span className={styles.logoSecondary}>.app</span>
+                </div>
             </div>
 
             <div className={styles.headerCenter}>
@@ -41,15 +52,11 @@ function Header({ onEnterFocus }) {
                     <FocusButton
                         activeTask={activeTask}
                         onEnterFocus={onEnterFocus}
-                    />)}
+                    />
+                )}
             </div>
 
-
-            <input
-                className={styles.search}
-                placeholder="Buscar tareas..."
-            />
-
+            <input className={styles.search} placeholder="Buscar tareas..." />
             <div className={styles.userAvatar}>R</div>
         </header>
     );
