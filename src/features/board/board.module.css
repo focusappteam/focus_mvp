@@ -161,7 +161,7 @@
     display: inline;
 }
 
-.tags_container{
+.tagsContainer{
     display: flex;
     gap:5px
 }
