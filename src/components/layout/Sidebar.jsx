@@ -156,13 +156,7 @@ function Sidebar() {
     }
 
     function handleContextMenu(e, wsId) {
-        const sidebar = e.currentTarget.closest("aside");
-        const rect = sidebar.getBoundingClientRect();
-        setContextMenu({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-            wsId,
-        });
+        setContextMenu({ x: e.clientX, y: e.clientY, wsId });
     }
 
     function handleRename(value) {

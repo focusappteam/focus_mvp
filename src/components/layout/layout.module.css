@@ -111,7 +111,7 @@
     font-weight: 600;
 }
 
-/* SIDEBAR WRAPPER — handles show/hide with slide animation */
+/* SIDEBAR WRAPPER */
 
 .sidebarWrapper {
     width: 0;
@@ -137,6 +137,8 @@
     gap: 4px;
     position: relative;
     box-sizing: border-box;
+    /* Allow context menu to overflow outside sidebar bounds */
+    overflow: visible;
 }
 
 .sidebarTitle {
@@ -277,13 +279,13 @@
 /* Context Menu */
 
 .contextMenu {
-    position: absolute;
+    position: fixed;
     background: #ffffff;
     border: 1px solid #e5e7eb;
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
     padding: 4px;
-    z-index: 200;
+    z-index: 9999;
     min-width: 160px;
     animation: contextMenuIn 0.12s ease-out;
 }
