@@ -1,7 +1,7 @@
+import { useState, useMemo } from "react";
 import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 import FocusButton from "../../features/board/focus/FocusButton";
-import { useMemo } from "react";
 
 function Header({ onEnterFocus }) {
     const { state, POMODORO_DURATION } = useTimer();
@@ -11,6 +11,7 @@ function Header({ onEnterFocus }) {
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
+
     const activeTask = useMemo(() => {
         if (!state.taskId) return null;
         const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
@@ -41,9 +42,9 @@ function Header({ onEnterFocus }) {
                     <FocusButton
                         activeTask={activeTask}
                         onEnterFocus={onEnterFocus}
-                    />)}
+                    />
+                )}
             </div>
-
 
             <input
                 className={styles.search}
