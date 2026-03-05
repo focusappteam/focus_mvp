@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTimer } from "../../contexts/TimerContext";
 import styles from "./board.module.css";
 import Task from "./Task";
@@ -15,6 +15,12 @@ const TASK_WIDTH = 260;
 const TASK_HEIGHT = 60;
 const HEADER_HEIGHT = 1;
 
+const EDGE_ZONE = 80;
+const MAX_SCROLL_SPEED = 14;
+
+function getScrollSpeed(distance) {
+    return Math.round((1 - distance / EDGE_ZONE) * MAX_SCROLL_SPEED);
+}
 
 function Board({ isFocusOverlayOpen, onExitFocus }) {
     const canvasRef = useRef(null);
@@ -37,10 +43,23 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
     const toastCleanupRef = useRef(null);
     const isCreatingRef = useRef(false);
     const isEditingRef = useRef(false);
+
+    // Auto-scroll
+    const isDraggingRef = useRef(false);
+    const activeDragIdRef = useRef(null);
+    const dragMousePosRef = useRef({ x: 0, y: 0 });
+    const autoScrollRafRef = useRef(null);
+    const autoScrollDeltaRef = useRef({ x: 0, y: 0 });
+    const offsetRef = useRef({ x: 0, y: 0 });
+    const zoomRef = useRef(1);
+    // Reactive: triggers re-render of the dragged Task so it visually follows the cursor
+    const [dragScrollOffset, setDragScrollOffset] = useState({ x: 0, y: 0 });
+
+    useEffect(() => { offsetRef.current = offset; }, [offset]);
+    useEffect(() => { zoomRef.current = zoom; }, [zoom]);
     useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
     useEffect(() => { isEditingRef.current = isEditingTask; }, [isEditingTask]);
 
-    // --- Fuente de verdad: TimerContext ---
     const { state: timerState } = useTimer();
     const activeTask = useMemo(() => tasks.find(t => t.id === timerState.taskId) ?? null, [tasks, timerState.taskId]);
     const focusedTaskId = useMemo(() =>
@@ -48,13 +67,125 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
             ? timerState.taskId
             : null, [timerState.taskId, timerState.timers]);
 
-
     const isFocusMode = focusedTaskId !== null;
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
 
+    // ── Auto-scroll loop ──────────────────────────────────────────────────────
+    const runAutoScroll = useCallback(() => {
+        if (!isDraggingRef.current) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const { x: mx, y: my } = dragMousePosRef.current;
+
+        const distLeft   = mx - rect.left;
+        const distRight  = rect.right - mx;
+        const distTop    = my - rect.top;
+        const distBottom = rect.bottom - my;
+
+        let dx = 0;
+        let dy = 0;
+
+        if (distLeft   < EDGE_ZONE && distLeft   >= 0) dx =  getScrollSpeed(distLeft);
+        if (distRight  < EDGE_ZONE && distRight  >= 0) dx = -getScrollSpeed(distRight);
+        if (distTop    < EDGE_ZONE && distTop    >= 0) dy =  getScrollSpeed(distTop);
+        if (distBottom < EDGE_ZONE && distBottom >= 0) dy = -getScrollSpeed(distBottom);
+
+        if (dx !== 0 || dy !== 0) {
+            setOffset(prev => {
+                const next = { x: prev.x + dx, y: prev.y + dy };
+                offsetRef.current = next;
+                return next;
+            });
+            autoScrollDeltaRef.current = {
+                x: autoScrollDeltaRef.current.x + dx,
+                y: autoScrollDeltaRef.current.y + dy,
+            };
+            // Trigger Task re-render so it compensates its visual position in real time
+            setDragScrollOffset({ ...autoScrollDeltaRef.current });
+        }
+
+        autoScrollRafRef.current = requestAnimationFrame(runAutoScroll);
+    }, []);
+
+    function startAutoScroll() {
+        cancelAnimationFrame(autoScrollRafRef.current);
+        autoScrollRafRef.current = requestAnimationFrame(runAutoScroll);
+    }
+
+    function stopAutoScroll() {
+        cancelAnimationFrame(autoScrollRafRef.current);
+        autoScrollRafRef.current = null;
+    }
+
+    // ── DnD handlers ─────────────────────────────────────────────────────────
+    function handleDragStart(event) {
+        isDraggingRef.current = true;
+        activeDragIdRef.current = event.active.id;
+        autoScrollDeltaRef.current = { x: 0, y: 0 };
+        setDragScrollOffset({ x: 0, y: 0 });
+        startAutoScroll();
+    }
+
+    function handleDragEnd(event) {
+        isDraggingRef.current = false;
+        activeDragIdRef.current = null;
+        stopAutoScroll();
+        setDragScrollOffset({ x: 0, y: 0 });
+
+        const { active, delta } = event;
+        const scrollDelta = { ...autoScrollDeltaRef.current };
+        autoScrollDeltaRef.current = { x: 0, y: 0 };
+
+        setTasks((prevTasks) => {
+            const draggedTask = prevTasks.find(t => t.id === active.id);
+            if (!draggedTask) return prevTasks;
+
+            const currentZoom = zoomRef.current;
+            const currentOffset = offsetRef.current;
+
+            // delta = pointer travel in screen px (from dnd-kit)
+            // scrollDelta = how much offset changed while dragging (canvas panned)
+            // Canvas panning right (+dx) moves the world left, so the task's world
+            // position shifts by -dx/zoom. We correct by subtracting scrollDelta/zoom.
+            const rawX = (draggedTask.position?.x || 0) + (delta.x - scrollDelta.x) / currentZoom;
+            const rawY = (draggedTask.position?.y || 0) + (delta.y - scrollDelta.y) / currentZoom;
+            const minVisibleY = (HEADER_HEIGHT - currentOffset.y) / currentZoom;
+
+            if (rawY < minVisibleY) {
+                showToast("Esta tarea no puede ser ubicada aqui");
+                return prevTasks;
+            }
+
+            const newPosition = { x: rawX, y: rawY };
+            const hasCollision = prevTasks.some(task =>
+                task.id !== active.id && isColliding(newPosition, task.position)
+            );
+
+            if (hasCollision) {
+                showToast("La tarea no puede ubicarse sobre otra");
+                return prevTasks;
+            }
+
+            return prevTasks.map(task =>
+                task.id === active.id ? { ...task, position: newPosition } : task
+            );
+        });
+    }
+
+    useEffect(() => {
+        function onMouseMove(e) {
+            dragMousePosRef.current = { x: e.clientX, y: e.clientY };
+        }
+        window.addEventListener("mousemove", onMouseMove);
+        return () => window.removeEventListener("mousemove", onMouseMove);
+    }, []);
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     function handleWheel(e) {
         if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
@@ -130,39 +261,6 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
         };
     }
 
-    function handleDragEnd(event) {
-        const { active, delta } = event;
-        setTasks((prevTasks) => {
-            const activeTask = prevTasks.find(t => t.id === active.id);
-            if (!activeTask) return prevTasks;
-
-            const rawX = (activeTask.position?.x || 0) + delta.x / zoom;
-            const rawY = (activeTask.position?.y || 0) + delta.y / zoom;
-            const minVisibleY = (HEADER_HEIGHT - offset.y) / zoom;
-
-            if (rawY < minVisibleY) {
-                showToast("Esta tarea no puede ser ubicada aqui");
-                return prevTasks;
-            }
-
-            const newPosition = { x: rawX, y: rawY };
-            const hasCollision = prevTasks.some(task =>
-                task.id !== active.id && isColliding(newPosition, task.position)
-            );
-
-            if (hasCollision) {
-                showToast("La tarea no puede ubicarse sobre otra");
-                return prevTasks;
-            }
-
-            return prevTasks.map(task =>
-                task.id === active.id ? { ...task, position: newPosition } : task
-            );
-        });
-    }
-
-
-
     function handleBoardDoubleClick(e) {
         if (isCreatingTask || isEditingTask) { e.stopPropagation(); return; }
         if (isFocusMode) return;
@@ -173,7 +271,6 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
         });
         setIsCreatingTask(true);
     }
-
 
     function zoomAtCenter(direction) {
         const rect = canvasRef.current.getBoundingClientRect();
@@ -235,7 +332,10 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
                 }}
             >
                 <div className={styles.world}>
-                    <DndContext onDragEnd={handleDragEnd}>
+                    <DndContext
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                    >
                         {tasks.map(task => (
                             <Task
                                 key={task.id}
@@ -248,6 +348,11 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
                                 }}
                                 isBlocked={isFocusMode && task.id !== focusedTaskId}
                                 isFocused={task.id === focusedTaskId}
+                                dragScrollOffset={
+                                    activeDragIdRef.current === task.id
+                                        ? dragScrollOffset
+                                        : null
+                                }
                             />
                         ))}
                     </DndContext>
