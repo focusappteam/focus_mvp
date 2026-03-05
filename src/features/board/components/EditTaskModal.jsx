@@ -32,7 +32,7 @@ const ACCENT_COLORS = [
 
 // duration now comes from context
 
-function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, onTimerComplete }) {
+function EditTaskModal({ onClose, onSave, onDelete, task, onTimerComplete }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -68,8 +68,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, onTimerCom
   }, []);
 
   function handleStartTimer() {
-    handleStart((updatedTask) => {
-      onSave(updatedTask);
+    handleStart(() => {
       onTimerComplete?.();
     })
   }
@@ -176,8 +175,13 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, onTimerCom
   }
 
   function handleComplete() {
-    handlePauseTimer();
-    if (onComplete) { onComplete(task.id); }
+    handlePause((updatedTask) => {
+      onSave({
+        ...updatedTask,
+        status: "completed",
+        tags: [...(updatedTask.tags || []), "COMPLETED"]
+      });
+    });
     onClose();
   }
 
@@ -341,7 +345,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, onTimerCom
             </div>
             <div
               className={`${styles.timerCircle} ${isRunning ? styles.timerActive : ""}`}
-              style={{ "--progress": `${timerProgress}%` }}
+              style={!isStopwatch ? { "--progress": `${timerProgress}%` } : {}}
             >
               <span className={styles.timerTime}>{formattedTime}</span>
               <span className={styles.timerSubtext}>
@@ -441,7 +445,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, onTimerCom
         </div>
       </div>
       <Toast message={toast} visible={toastVisible} />
-    </div>
+    </div >
   );
 }
 

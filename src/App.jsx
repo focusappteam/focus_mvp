@@ -10,7 +10,6 @@ function App() {
       <Board
         isFocusOverlayOpen={isFocusOverlayOpen}
         onExitFocus={() => setIsFocusOverlayOpen(false)}
-        onTimerComplete={() => setIsFocusOverlayOpen(false)}
       />
     </Layout>
   );

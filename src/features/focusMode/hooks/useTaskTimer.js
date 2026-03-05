@@ -57,7 +57,8 @@ export function useTaskTimer(task) {
 
   const handlePause = useCallback((onSave) => {
     if (!isThisTaskTimer) return;
-    // Guarda el tiempo transcurrido antes de pausar (igual que EditTaskModal)
+    pause();
+    // Guarda el tiempo transcurrido luego de pausar
     if (onSave && timer?.startedAt) {
       const elapsed = Math.floor((Date.now() - timer.startedAt) / 1000);
       if (elapsed > 0) {
@@ -67,7 +68,7 @@ export function useTaskTimer(task) {
         });
       }
     }
-    pause();
+
   }, [isThisTaskTimer, timer, pause, task]);
 
   const handleReset = useCallback(() => {
