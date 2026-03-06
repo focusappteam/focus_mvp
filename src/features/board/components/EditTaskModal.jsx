@@ -32,7 +32,7 @@ const ACCENT_COLORS = [
 
 // duration now comes from context
 
-function EditTaskModal({ onClose, onSave, onDelete, task, onTimerComplete }) {
+function EditTaskModal({ onClose, onSave, onDelete, task }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -69,8 +69,10 @@ function EditTaskModal({ onClose, onSave, onDelete, task, onTimerComplete }) {
 
   function handleStartTimer() {
     handleStart(() => {
-      onTimerComplete?.();
-    })
+      const updatedTask = { ...task, timeActive: (task.timeActive ?? 0) + 1500 };
+      onSave(updatedTask);
+      showToast("Sesion Completada!");
+    });
   }
 
   function handlePauseTimer() {

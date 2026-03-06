@@ -54,37 +54,6 @@ function Board({ isFocusOverlayOpen, onExitFocus, onTimerComplete }) {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
 
-    const prevTimerStateRef = useRef(timerState);
-
-    useEffect(() => {
-        const prev = prevTimerStateRef.current;
-
-        Object.keys(timerState.timers).forEach(taskId => {
-            const curr = timerState.timers[taskId];
-            const prevTimer = prev.timers[taskId];
-
-            const justFinished =
-                prevTimer?.isRunning &&
-                !curr.isRunning &&
-                curr.remainingTime === 1500 &&
-                curr.elapsedTime === 0;
-
-            if (justFinished) {
-                setTasks(prevTasks =>
-                    prevTasks.map(t =>
-                        t.id === taskId
-                            ? { ...t, timeActive: (t.timeActive ?? 0) + 1500 }
-                            : t
-                    )
-                );
-                showToast("¡Bloque de focus completado!");
-            }
-        });
-
-        prevTimerStateRef.current = timerState;
-    }, [timerState]);
-
-
     function handleWheel(e) {
         if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
         if (!e.ctrlKey) return;
