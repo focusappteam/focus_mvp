@@ -1,13 +1,43 @@
 import styles from "./board.module.css";
 import { useDraggable } from "@dnd-kit/core";
-import React from "react";
+import React, { useRef, useLayoutEffect, useCallback } from "react";
+import {
+GripVertical
+} from "lucide-react";
 
-function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused }) {
-    const { id, title } = task;
+function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused, onResize }) {
+    const { id, title, tags, priority = "Medium", checklist = [] } = task;
     const { x = 0, y = 0 } = task.position || {};
+
+    // Progress calculation
+    const completedSubtasks = checklist.filter(s => s.checked).length;
+    const totalSubtasks = checklist.length;
+    const progress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
+    const innerRef = useRef(null);
 
     const { attributes, listeners, setNodeRef, transform } =
         useDraggable({ id, disabled: isBlocked });
+
+    // Combine refs for dnd-kit and ResizeObserver
+    const setRefs = useCallback((node) => {
+        setNodeRef(node);
+        innerRef.current = node;
+    }, [setNodeRef]);
+
+    // Report dimensions when size changes
+    useLayoutEffect(() => {
+        const element = innerRef.current;
+        if (!element || !onResize) return;
+
+        const observer = new ResizeObserver(([entry]) => {
+            onResize(id, {
+                width: entry.borderBoxSize[0]?.inlineSize ?? entry.contentRect.width,
+                height: entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height,
+            });
+        });
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [id, onResize]);
 
     const dragX = transform ? transform.x / zoom : 0;
     const dragY = transform ? transform.y / zoom : 0;
@@ -24,27 +54,56 @@ function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused }
     };
 
     return (
-        <div style={{ cursor: isBlocked ? "not-allowed" : undefined }}>
-            <div
-                ref={setNodeRef}
-                className={`
+      <div style={{ cursor: isBlocked ? "not-allowed" : undefined }}>
+        <div
+          ref={setRefs}
+          className={`
                 ${styles.task}
                 ${task.status === "completed" ? styles.taskCompleted : ""}
             `}
-                style={style}
-                {...listeners}
-                {...attributes}
-                onMouseEnter={() => !isBlocked && onHoverChange(true)}
-                onMouseLeave={() => onHoverChange(false)}
-                onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    if (isBlocked) return;
-                    onDoubleClick(task);
-                }}
-            >
-                {title}
+          style={style}
+          {...listeners}
+          {...attributes}
+          onMouseEnter={() => !isBlocked && onHoverChange(true)}
+          onMouseLeave={() => onHoverChange(false)}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            if (isBlocked) return;
+            onDoubleClick(task);
+          }}
+        >
+          <div className={styles.upperSection}>
+            <div className={`${styles.priority} ${styles[priority]}`}>
+              <p>{priority}</p>
             </div>
+            <div>
+              <GripVertical className={styles.icon} size={20} />
+            </div>
+          </div>
+          <h3 className={styles.title}>{title}</h3>
+          <div className={styles.tagsContainer}>
+            {tags?.slice(0, 5).map((tag) => (
+              <span className={styles.tag} key={tag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+          {totalSubtasks > 0 && (
+            <div className={styles.subtaskRow}>
+              <span className={styles.subtaskLabel}>
+                {completedSubtasks}/{totalSubtasks}
+              </span>
+              <div className={styles.progressBar}>
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className={styles.progressPct}>{Math.round(progress)}%</span>
+            </div>
+          )}
         </div>
+      </div>
     );
 }
 

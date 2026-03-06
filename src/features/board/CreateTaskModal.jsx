@@ -91,6 +91,7 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                             placeholder="Titulo"
                             value={form.title}
                             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                            maxLength={25}
                             required
                         />
                     </div>

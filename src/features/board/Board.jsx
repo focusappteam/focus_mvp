@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTimer } from "../../contexts/TimerContext";
 import styles from "./board.module.css";
 import Task from "./Task";
@@ -11,8 +11,8 @@ import FocusOverlay from "./focus/FocusOverlay";
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.1;
-const TASK_WIDTH = 260;
-const TASK_HEIGHT = 60;
+const DEFAULT_TASK_WIDTH = 260;
+const DEFAULT_TASK_HEIGHT = 120;
 const HEADER_HEIGHT = 1;
 
 
@@ -32,6 +32,7 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
     const [isPanning, setIsPanning] = useState(false);
     const [isHoveringTask, setIsHoveringTask] = useState(false);
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
+    const [taskDimensions, setTaskDimensions] = useState({});
     const panStartRef = useRef({ x: 0, y: 0 });
     const toastTimeoutRef = useRef(null);
     const toastCleanupRef = useRef(null);
@@ -54,6 +55,22 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
+
+    // Callback to update task dimensions from ResizeObserver
+    const handleTaskResize = useCallback((taskId, dimensions) => {
+        setTaskDimensions(prev => {
+            const existing = prev[taskId];
+            if (existing?.width === dimensions.width && existing?.height === dimensions.height) {
+                return prev;
+            }
+            return { ...prev, [taskId]: dimensions };
+        });
+    }, []);
+
+    // Helper to get task dimensions with fallback
+    const getTaskDimensions = useCallback((taskId) => {
+        return taskDimensions[taskId] || { width: DEFAULT_TASK_WIDTH, height: DEFAULT_TASK_HEIGHT };
+    }, [taskDimensions]);
 
 
     function handleWheel(e) {
@@ -95,25 +112,31 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
         }, 2000);
     }
 
-    function isColliding(a, b) {
+    function isColliding(posA, posB, taskIdA, taskIdB) {
+        const dimA = getTaskDimensions(taskIdA);
+        const dimB = getTaskDimensions(taskIdB);
         return !(
-            a.x + TASK_WIDTH < b.x ||
-            a.x > b.x + TASK_WIDTH ||
-            a.y + TASK_HEIGHT < b.y ||
-            a.y > b.y + TASK_HEIGHT
+            posA.x + dimA.width < posB.x ||
+            posA.x > posB.x + dimB.width ||
+            posA.y + dimA.height < posB.y ||
+            posA.y > posB.y + dimB.height
         );
     }
 
-    function findFreePosition(initialPosition, tasks) {
+    function findFreePosition(initialPosition, tasks, newTaskId = null) {
         let testPosition = { ...initialPosition };
         const GAP = 20;
         let collision = true;
+        let maxHeightInCollision = DEFAULT_TASK_HEIGHT;
         while (collision) {
-            collision = tasks.some(task => isColliding(testPosition, task.position));
+            const collidingTask = tasks.find(task => isColliding(testPosition, task.position, newTaskId, task.id));
+            collision = !!collidingTask;
             if (collision) {
+                const collidingDim = getTaskDimensions(collidingTask.id);
+                maxHeightInCollision = Math.max(maxHeightInCollision, collidingDim.height);
                 testPosition = {
                     x: testPosition.x,
-                    y: testPosition.y + TASK_HEIGHT + GAP,
+                    y: testPosition.y + maxHeightInCollision + GAP,
                 };
             }
         }
@@ -125,8 +148,8 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         return {
-            x: (centerX - offset.x) / zoom - TASK_WIDTH / 2,
-            y: (centerY - offset.y) / zoom - TASK_HEIGHT / 2,
+            x: (centerX - offset.x) / zoom - DEFAULT_TASK_WIDTH / 2,
+            y: (centerY - offset.y) / zoom - DEFAULT_TASK_HEIGHT / 2,
         };
     }
 
@@ -147,7 +170,7 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
 
             const newPosition = { x: rawX, y: rawY };
             const hasCollision = prevTasks.some(task =>
-                task.id !== active.id && isColliding(newPosition, task.position)
+                task.id !== active.id && isColliding(newPosition, task.position, active.id, task.id)
             );
 
             if (hasCollision) {
@@ -248,6 +271,7 @@ function Board({ isFocusOverlayOpen, onExitFocus }) {
                                 }}
                                 isBlocked={isFocusMode && task.id !== focusedTaskId}
                                 isFocused={task.id === focusedTaskId}
+                                onResize={handleTaskResize}
                             />
                         ))}
                     </DndContext>
