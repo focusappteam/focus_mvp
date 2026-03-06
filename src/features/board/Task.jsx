@@ -6,8 +6,13 @@ GripVertical
 } from "lucide-react";
 
 function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused, onResize }) {
-    const { id, title, tags, priority = "Medium" } = task;
+    const { id, title, tags, priority = "Medium", checklist = [] } = task;
     const { x = 0, y = 0 } = task.position || {};
+
+    // Progress calculation
+    const completedSubtasks = checklist.filter(s => s.checked).length;
+    const totalSubtasks = checklist.length;
+    const progress = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
     const innerRef = useRef(null);
 
     const { attributes, listeners, setNodeRef, transform } =
@@ -83,6 +88,20 @@ function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused, 
               </span>
             ))}
           </div>
+          {totalSubtasks > 0 && (
+            <div className={styles.subtaskRow}>
+              <span className={styles.subtaskLabel}>
+                {completedSubtasks}/{totalSubtasks}
+              </span>
+              <div className={styles.progressBar}>
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className={styles.progressPct}>{Math.round(progress)}%</span>
+            </div>
+          )}
         </div>
       </div>
     );

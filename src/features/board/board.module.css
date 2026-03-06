@@ -191,6 +191,44 @@
     color: rgb(135, 2, 2);
 }
 
+/* Progress bar for subtasks */
+.subtaskRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.subtaskLabel {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    color: #999;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.progressBar {
+    flex: 1;
+    min-width: 40px;
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: #4a7c70;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.progressPct {
+    font-size: 9px;
+    color: #999;
+    font-weight: 600;
+}
+
 .task:hover {
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
 }
