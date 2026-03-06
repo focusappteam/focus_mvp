@@ -14,7 +14,8 @@ import {
   Trash2,
   Plus,
   Timer,
-  Clock
+  Clock,
+  Pencil
 } from "lucide-react";
 import { useTimer } from "../../contexts/TimerContext";
 
@@ -218,17 +219,26 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
     }
   }
 
-  function handleAddTag(e) {
-    if (e.key === "Enter" && newTag.trim()) {
-      e.preventDefault();
-      if (!form.tags.includes(newTag.trim().toUpperCase())) {
+  function commitTagAdd() {
+    if (newTag.trim()) {
+      const tagValue = newTag.trim().toUpperCase();
+      if (!form.tags.includes(tagValue)) {
         setForm(f => ({
           ...f,
-          tags: [...f.tags, newTag.trim().toUpperCase()]
+          tags: [...f.tags, tagValue]
         }));
+      } else {
+        showToast("Esta Tag ya existe en esta tarea");
       }
-      setNewTag("");
-      setIsAddingTag(false);
+    }
+    setNewTag("");
+    setIsAddingTag(false);
+  }
+
+  function handleAddTag(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitTagAdd();
     } else if (e.key === "Escape") {
       setNewTag("");
       setIsAddingTag(false);
@@ -400,13 +410,16 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                       autoFocus
                     />
                   ) : (
-                    <span
-                      className={styles.checklistText}
-                      onClick={(e) => handleChecklistTextClick(index, e)}
-                    >
+                    <span className={styles.checklistText}>
                       {item.text}
                     </span>
                   )}
+                  <button
+                    className={styles.editChecklistItem}
+                    onClick={(e) => handleChecklistTextClick(index, e)}
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     className={styles.removeChecklistItem}
                     onClick={(e) => handleRemoveChecklistItem(index, e)}
@@ -462,7 +475,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                 <span
                   key={index}
                   className={`${styles.tag}`}
-                  onClick={(e) => handleTagClick(index, e)}
+                  onDoubleClick={(e) => handleTagClick(index, e)}
                 >
                   #{tag}
                   <button
@@ -483,11 +496,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyDown={handleAddTag}
-                onBlur={() => {
-                  if (!newTag.trim()) {
-                    setIsAddingTag(false);
-                  }
-                }}
+                onBlur={commitTagAdd}
                 autoFocus
               />
             ) : (
