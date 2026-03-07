@@ -1,6 +1,7 @@
 import Layout from "./components/layout/Layout";
 import Board from "./features/board/Board";
 import { TimerProvider } from "./contexts/TimerContext";
+import { BoardProvider } from "./contexts/BoardContext";
 import { useState } from "react";
 
 function App() {
@@ -9,17 +10,19 @@ function App() {
 
   return (
     <TimerProvider>
-      <Layout
-        onEnterFocus={() => setIsFocusOverlayOpen(true)}
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen(prev => !prev)}
-      >
-        <Board
-          isFocusOverlayOpen={isFocusOverlayOpen}
-          onExitFocus={() => setIsFocusOverlayOpen(false)}
+      <BoardProvider>
+        <Layout
+          onEnterFocus={() => setIsFocusOverlayOpen(true)}
           sidebarOpen={sidebarOpen}
-        />
-      </Layout>
+          onToggleSidebar={() => setSidebarOpen(prev => !prev)}
+        >
+          <Board
+            isFocusOverlayOpen={isFocusOverlayOpen}
+            onExitFocus={() => setIsFocusOverlayOpen(false)}
+            sidebarOpen={sidebarOpen}
+          />
+        </Layout>
+      </BoardProvider>
     </TimerProvider>
   );
 }

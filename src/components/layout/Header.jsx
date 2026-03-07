@@ -1,11 +1,13 @@
 import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
+import { useBoard } from "../../contexts/BoardContext";
 import FocusButton from "../../features/board/focus/FocusButton";
 import { useMemo } from "react";
 import { Menu } from "lucide-react";
 
 function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     const { state, POMODORO_DURATION } = useTimer();
+    const { allTasks } = useBoard();
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -13,11 +15,11 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const activeTask = useMemo(() => {
-        if (!state.taskId) return null;
-        const tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
-        return tasks.find(t => t.id === state.taskId) ?? null;
-    }, [state.taskId]);
+    // Now reads from context instead of localStorage directly
+    const activeTask = useMemo(() =>
+        state.taskId ? allTasks.find(t => t.id === state.taskId) ?? null : null,
+        [state.taskId, allTasks]
+    );
 
     const activeTimer = state.taskId && state.timers[state.taskId];
     const isStopwatch = activeTimer?.mode === 'stopwatch';
@@ -49,10 +51,7 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
                     </>
                 )}
                 {activeTask && (
-                    <FocusButton
-                        activeTask={activeTask}
-                        onEnterFocus={onEnterFocus}
-                    />
+                    <FocusButton activeTask={activeTask} onEnterFocus={onEnterFocus} />
                 )}
             </div>
 
