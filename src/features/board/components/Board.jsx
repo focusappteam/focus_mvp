@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useTimer } from "../../../contexts/TimerContext";
-import { useBoard } from "../../contexts/BoardContext";
+import { useBoard } from "../../../contexts/BoardContext";
 import styles from "../board.module.css";
 import Task from "./Task";
 import CreateTaskModal from "./CreateTaskModal";
@@ -294,7 +294,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                     onDelete={(taskId) => deleteTask(taskId)}
                     onComplete={(taskId) => completeTask(taskId)}
                     task={editingTask}
-                    onTimerComplete={onTimerComplete}
+
                 />
             )}
 

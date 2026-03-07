@@ -20,6 +20,7 @@ import {
 import { useTaskTimer } from "../../focusMode/hooks/useTaskTimer";
 import { useToast } from "../../../hooks/useToast";
 import Toast from "../../../components/UI/Toast";
+import Task from "./Task";
 
 
 
@@ -33,7 +34,7 @@ const ACCENT_COLORS = [
 
 // duration now comes from context
 
-function EditTaskModal({ onClose, onSave, onDelete, task }) {
+function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -63,7 +64,7 @@ function EditTaskModal({ onClose, onSave, onDelete, task }) {
   const [newTag, setNewTag] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
   const { toast, toastVisible, showToast } = useToast();
-    const [editingTagIndex, setEditingTagIndex] = useState(null);
+  const [editingTagIndex, setEditingTagIndex] = useState(null);
   const [editingTagValue, setEditingTagValue] = useState("");
 
   useEffect(() => {
@@ -257,13 +258,10 @@ function EditTaskModal({ onClose, onSave, onDelete, task }) {
   }
 
   function handleComplete() {
-    handlePause((updatedTask) => {
-      onSave({
-        ...updatedTask,
-        status: "completed",
-        tags: [...(updatedTask.tags || []), "COMPLETED"]
-      });
-    });
+    handlePauseTimer();
+    if (onComplete) {
+      onComplete(Task.id)
+    }
     onClose();
   }
 

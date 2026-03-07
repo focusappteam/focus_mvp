@@ -1,7 +1,7 @@
 import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 import { useBoard } from "../../contexts/BoardContext";
-import FocusButton from "../../features/board/focus/FocusButton";
+import FocusButton from "../../features/focusMode/components/FocusButton";
 import { useMemo } from "react";
 import { useTaskTimer } from "../../features/focusMode/hooks/useTaskTimer";
 import { Menu } from "lucide-react";
@@ -10,7 +10,7 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     const { state } = useTimer();
     const { allTasks } = useBoard();
 
-    
+
 
     // Now reads from context instead of localStorage directly
     const activeTask = useMemo(() =>
