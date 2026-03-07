@@ -1,9 +1,8 @@
 import Layout from "./components/layout/Layout";
-import Board from "./features/board/Board";
-import { TimerProvider } from "./contexts/TimerContext";
 import { BoardProvider } from "./contexts/BoardContext";
 import { useState } from "react";
-
+import Board from "./features/board/components/Board";
+import { TimerProvider } from "./contexts/TimerContext";
 function App() {
   const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);

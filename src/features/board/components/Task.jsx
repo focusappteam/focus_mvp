@@ -1,4 +1,4 @@
-import styles from "./board.module.css";
+import styles from "../board.module.css";
 import { useDraggable } from "@dnd-kit/core";
 import React, { useRef, useLayoutEffect, useCallback } from "react";
 import {

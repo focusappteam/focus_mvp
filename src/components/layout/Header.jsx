@@ -1,19 +1,16 @@
 import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 import { useBoard } from "../../contexts/BoardContext";
-import FocusButton from "../../features/board/focus/FocusButton";
+import FocusButton from "../../features/focusMode/components/FocusButton";
 import { useMemo } from "react";
+import { useTaskTimer } from "../../features/focusMode/hooks/useTaskTimer";
 import { Menu } from "lucide-react";
 
 function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
-    const { state, POMODORO_DURATION } = useTimer();
+    const { state } = useTimer();
     const { allTasks } = useBoard();
 
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
+
 
     // Now reads from context instead of localStorage directly
     const activeTask = useMemo(() =>
@@ -21,12 +18,7 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
         [state.taskId, allTasks]
     );
 
-    const activeTimer = state.taskId && state.timers[state.taskId];
-    const isStopwatch = activeTimer?.mode === 'stopwatch';
-    const currentTime = isStopwatch
-        ? activeTimer.elapsedTime || 0
-        : activeTimer?.remainingTime ?? POMODORO_DURATION;
-
+    const { formattedTime, isStopwatch, isRunning } = useTaskTimer(activeTask);
     return (
         <header className={styles.header}>
             <div className={styles.headerLeft}>
@@ -44,15 +36,18 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
             </div>
 
             <div className={styles.headerCenter}>
-                {activeTimer && (
+                {isRunning && (
                     <>
-                        <div className={styles.timerBadge}>{formatTime(currentTime)}</div>
+                        <div className={styles.timerBadge}>{formattedTime}</div>
                         <div className={styles.focusBadge}>{isStopwatch ? 'STOPWATCH' : 'CountDown'}</div>
+                        {activeTask && (
+                            <FocusButton
+                                activeTask={activeTask}
+                                onEnterFocus={onEnterFocus}
+                            />)}
                     </>
                 )}
-                {activeTask && (
-                    <FocusButton activeTask={activeTask} onEnterFocus={onEnterFocus} />
-                )}
+
             </div>
 
             <input className={styles.search} placeholder="Buscar tareas..." />

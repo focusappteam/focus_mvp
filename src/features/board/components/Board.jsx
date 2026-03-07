@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useTimer } from "../../contexts/TimerContext";
-import { useBoard } from "../../contexts/BoardContext";
-import styles from "./board.module.css";
+import { useTimer } from "../../../contexts/TimerContext";
+import { useBoard } from "../../../contexts/BoardContext";
+import styles from "../board.module.css";
 import Task from "./Task";
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
 import { RotateCcw, Plus, Minus } from "lucide-react";
-import FocusOverlay from "./focus/FocusOverlay";
+import FocusOverlay from "../../focusMode/components/FocusOverlay";
+import Toast from "../../../components/UI/Toast";
+import { useToast } from "../../../hooks/useToast";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
@@ -22,8 +24,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
     const canvasRef = useRef(null);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [toast, setToast] = useState(null);
-    const [toastVisible, setToastVisible] = useState(false);
+    const { toast, toastVisible, showToast } = useToast();
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     const [isEditingTask, setIsEditingTask] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
@@ -32,8 +33,6 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
     const [newTaskPosition, setNewTaskPosition] = useState({ x: 100, y: 100 });
     const [taskDimensions, setTaskDimensions] = useState({});
     const panStartRef = useRef({ x: 0, y: 0 });
-    const toastTimeoutRef = useRef(null);
-    const toastCleanupRef = useRef(null);
     const isCreatingRef = useRef(false);
     const isEditingRef = useRef(false);
     useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
@@ -98,17 +97,6 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
         canvas.addEventListener("wheel", handleWheel, { passive: false });
         return () => canvas.removeEventListener("wheel", handleWheel);
     }, []);
-
-    function showToast(message) {
-        clearTimeout(toastTimeoutRef.current);
-        clearTimeout(toastCleanupRef.current);
-        setToast(message);
-        setToastVisible(true);
-        toastTimeoutRef.current = setTimeout(() => {
-            setToastVisible(false);
-            toastCleanupRef.current = setTimeout(() => setToast(null), 200);
-        }, 2000);
-    }
 
     function isColliding(posA, posB, taskIdA, taskIdB) {
         const dimA = getTaskDimensions(taskIdA);
@@ -283,6 +271,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                     ? "Haga doble clic en cualquier lugar para crear una nueva tarea"
                     : "Selecciona o crea un workspace para empezar"}
             </div>
+            <Toast message={toast} visible={toastVisible} />
 
             {isCreatingTask && (
                 <CreateTaskModal
@@ -305,15 +294,10 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                     onDelete={(taskId) => deleteTask(taskId)}
                     onComplete={(taskId) => completeTask(taskId)}
                     task={editingTask}
-                    showToast={showToast}
+
                 />
             )}
 
-            {toast && (
-                <div className={`${styles.toast} ${toastVisible ? styles.toastEnter : styles.toastExit}`}>
-                    {toast}
-                </div>
-            )}
 
             {isFocusOverlayOpen && activeTask && (
                 <FocusOverlay
