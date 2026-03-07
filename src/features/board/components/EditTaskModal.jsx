@@ -1,5 +1,5 @@
 import styles from "./editTaskModal.module.css";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   FolderOpen,
   X,
@@ -17,7 +17,10 @@ import {
   Clock,
   Pencil
 } from "lucide-react";
-import { useTimer } from "../../contexts/TimerContext";
+import { useTaskTimer } from "../../focusMode/hooks/useTaskTimer";
+import { useToast } from "../../../hooks/useToast";
+import Toast from "../../../components/UI/Toast";
+
 
 
 const ACCENT_COLORS = [
@@ -27,14 +30,10 @@ const ACCENT_COLORS = [
   "#f472b6",
   "#34d399"
 ];
-function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-};
+
 // duration now comes from context
 
-function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast }) {
+function EditTaskModal({ onClose, onSave, onDelete, task }) {
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -45,33 +44,27 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
     tags: [],
     createdAt: ""
   });
-
+  const {
+    isRunning,
+    isStopwatch,
+    canStart,
+    hasStarted,
+    formattedTime,
+    timerProgress,
+    handleStart,
+    handlePause,
+    handleReset,
+    handleToggleMode,
+  } = useTaskTimer(task);
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isAddingChecklist, setIsAddingChecklist] = useState(false);
   const [editingChecklistIndex, setEditingChecklistIndex] = useState(null);
   const [editingChecklistValue, setEditingChecklistValue] = useState("");
   const [newTag, setNewTag] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
-  const [editingTagIndex, setEditingTagIndex] = useState(null);
+  const { toast, toastVisible, showToast } = useToast();
+    const [editingTagIndex, setEditingTagIndex] = useState(null);
   const [editingTagValue, setEditingTagValue] = useState("");
-
-  // Timer state is stored in a global context
-  const { state: timerState, start, pause, reset, toggleMode, POMODORO_DURATION } = useTimer();
-
-  // Check if this task owns the timer and whether we can start
-  const isThisTaskTimer = timerState.taskId === task?.id;
-  const isThisTaskRunning = isThisTaskTimer && timerState.timers[task?.id]?.isRunning;
-
-  const canStartTimer = useMemo(() => {
-    const otherTaskRunning = timerState.taskId &&
-      timerState.taskId !== task?.id &&
-      timerState.timers[timerState.taskId]?.isRunning;
-    return !otherTaskRunning;
-  }, [timerState.taskId, timerState.timers, task?.id]);
-
-  // Get current mode for this task (default to 'timer')
-  const currentMode = timerState.timers[task?.id]?.mode || 'timer';
-  const isStopwatch = currentMode === 'stopwatch';
 
   useEffect(() => {
     if (Notification.permission === "default") {
@@ -80,63 +73,19 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
   }, []);
 
   function handleStartTimer() {
-    if (!canStartTimer) return;
-
-    start(task.id, () => {
-      // timer finished callback
-      const updatedTask = {
-        ...task,
-        timeActive: (task.timeActive || 0) + POMODORO_DURATION
-      };
+    handleStart(() => {
+      const updatedTask = { ...task, timeActive: (task.timeActive ?? 0) + 1500 };
       onSave(updatedTask);
-    }, task.title);
+      showToast("Sesion Completada!");
+    });
   }
 
   function handlePauseTimer() {
-    if (!isThisTaskTimer) return;
-
-    const taskTimer = timerState.timers[task?.id];
-    const elapsedSinceStart = taskTimer?.startedAt
-      ? Math.floor((Date.now() - taskTimer.startedAt) / 1000)
-      : 0;
-
-    if (elapsedSinceStart > 0) {
-      const updatedTask = {
-        ...task,
-        timeActive: (task.timeActive || 0) + elapsedSinceStart
-      };
-      onSave(updatedTask);
-    }
-
-    pause();
+    handlePause((updatedTask) => onSave(updatedTask));
   }
 
   function handleResetTimer() {
-    reset();
-  }
-  // Calculate progress for the timer circle
-  const currentTaskTimer = timerState.timers[task?.id];
-  const timerProgress = useMemo(() => {
-    if (!currentTaskTimer) return 0;
-    return isStopwatch
-      ? Math.min((currentTaskTimer.elapsedTime || 0) / POMODORO_DURATION * 100, 100)
-      : ((POMODORO_DURATION - currentTaskTimer.remainingTime) / POMODORO_DURATION) * 100;
-  }, [currentTaskTimer, isStopwatch, POMODORO_DURATION]);
-
-
-  // Get display time based on mode - show stored time if available
-  const getDisplayTime = useCallback(() => {
-    if (currentTaskTimer) {
-      return isStopwatch
-        ? formatTime(currentTaskTimer.elapsedTime || 0)
-        : formatTime(currentTaskTimer.remainingTime ?? POMODORO_DURATION);
-    }
-    return isStopwatch ? formatTime(0) : formatTime(POMODORO_DURATION);
-  }, [currentTaskTimer, isStopwatch, POMODORO_DURATION]);
-
-  function handleToggleMode() {
-    if (isThisTaskRunning) return; // Don't toggle while running
-    toggleMode(task.id);
+    handleReset()
   }
 
   useEffect(() => {
@@ -308,22 +257,20 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
   }
 
   function handleComplete() {
-    handlePauseTimer();
-    if (onComplete) {
-      onComplete(task.id);
-    }
+    handlePause((updatedTask) => {
+      onSave({
+        ...updatedTask,
+        status: "completed",
+        tags: [...(updatedTask.tags || []), "COMPLETED"]
+      });
+    });
     onClose();
   }
 
   function handleDelete() {
     // clear any timer (especially if it's running for this task)
-    if (isThisTaskTimer) {
-      reset();
-    }
-
-    if (onDelete) {
-      onDelete(task.id);
-    }
+    handleReset();  // el hook ya sabe si este task tiene timer
+    if (onDelete) { onDelete(task.id); }
     onClose();
   }
 
@@ -519,16 +466,16 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
               DEEP WORK
             </div>
             <div
-              className={`${styles.timerCircle} ${isThisTaskRunning ? styles.timerActive : ""}`}
-              style={{ "--progress": `${timerProgress}%` }}
+              className={`${styles.timerCircle} ${isRunning ? styles.timerActive : ""}`}
+              style={!isStopwatch ? { "--progress": `${timerProgress}%` } : {}}
             >
-              <span className={styles.timerTime}>{getDisplayTime()}</span>
+              <span className={styles.timerTime}>{formattedTime}</span>
               <span className={styles.timerSubtext}>
                 {isStopwatch ? "STOPWATCH" : "FOCUS SESSION"}
               </span>
             </div>
             <div className={styles.timerControls}>
-              {isThisTaskRunning ? (
+              {isRunning ? (
                 <button
                   className={styles.pauseButton}
                   onClick={handlePauseTimer}
@@ -538,24 +485,19 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
                 </button>
               ) : (
                 <button
-                  className={`${styles.startButton} ${!canStartTimer ? styles.disabled : ""}`}
+                  className={`${styles.startButton} ${!canStart ? styles.disabled : ""}`}
                   onClick={handleStartTimer}
-                  disabled={!canStartTimer || task.status === "completed"}
+                  disabled={!canStart || task.status === "completed"}
                 >
                   <Play size={12} className={styles.playIcon} />
-                  {currentTaskTimer &&
-                    (isStopwatch
-                      ? currentTaskTimer.elapsedTime > 0
-                      : currentTaskTimer.remainingTime < POMODORO_DURATION)
-                    ? "Resume"
-                    : "Start"}
+                  {isRunning ? "Pause" : hasStarted ? "Resume" : "Start"}
                 </button>
               )}
               <button
                 className={styles.resetButton}
                 onClick={handleResetTimer}
                 disabled={
-                  (!isThisTaskTimer && timerState.taskId !== null) ||
+                  (!canStart || task.status === "completed") ||
                   task.status === "completed"
                 }
               >
@@ -564,12 +506,12 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
             </div>
             {/* Mode Toggle */}
             <div
-              className={`${styles.modeToggleContainer} ${isThisTaskRunning || task.status === "completed" ? styles.disabled : ""}`}
+              className={`${styles.modeToggleContainer} ${isRunning || task.status === "completed" ? styles.disabled : ""}`}
             >
               <button
                 className={`${styles.modeOption} ${!isStopwatch ? styles.active : ""}`}
                 onClick={() => (!isStopwatch ? null : handleToggleMode())}
-                disabled={isThisTaskRunning || task.status === "completed"}
+                disabled={isRunning || task.status === "completed"}
               >
                 <Timer size={14} />
                 Countdown
@@ -577,19 +519,17 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
               <button
                 className={`${styles.modeOption} ${isStopwatch ? styles.active : ""}`}
                 onClick={() => (isStopwatch ? null : handleToggleMode())}
-                disabled={isThisTaskRunning || task.status === "completed"}
+                disabled={isRunning || task.status === "completed"}
               >
                 <Clock size={14} />
                 Stopwatch
               </button>
             </div>
-            {timerState.taskId &&
-              timerState.timers[timerState.taskId]?.isRunning &&
-              !isThisTaskTimer && (
-                <div className={styles.timerWarning}>
-                  Timer active on another task
-                </div>
-              )}
+            {!canStart && !isRunning && (
+              <div className={styles.timerWarning}>
+                Timer active on another task
+              </div>
+            )}
           </div>
 
           {/* Card Accent Section */}
@@ -626,7 +566,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task, showToast 
           </div>
         </div>
       </div>
-    </div>
+      <Toast message={toast} visible={toastVisible} />
+    </div >
   );
 }
 

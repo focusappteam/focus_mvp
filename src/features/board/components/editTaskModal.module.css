@@ -454,8 +454,8 @@
     justify-content: center;
     margin: 0 auto 12px;
     position: relative;
-    background: conic-gradient(#4a5e52 calc(var(--progress, 0%) * 3.6deg),
-            transparent calc(var(--progress, 0%) * 3.6deg));
+    background: conic-gradient(#4a5e52 var(--progress, 0%),
+            transparent var(--progress, 0%))
 }
 
 .timerCircle::before {
