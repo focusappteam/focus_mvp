@@ -121,18 +121,17 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
         );
     }
 
-    function findFreePosition(initialPosition, taskList, newTaskId = null) {
+    function findFreePosition(initialPosition, tasks, newTaskId = null) {
         let testPosition = { ...initialPosition };
         const GAP = 20;
-        let collision = true;
-        let maxHeightInCollision = DEFAULT_TASK_HEIGHT;
-        while (collision) {
-            collision = tasks.some(task => isColliding(testPosition, task.position));
-            if (collision) {
-                const collidingDim = getTaskDimensions(collidingTask.id);
-                maxHeightInCollision = Math.max(maxHeightInCollision, collidingDim.height);
-                testPosition = { x: testPosition.x, y: testPosition.y + maxHeightInCollision + GAP };
-            }
+        let collidingTask;
+
+        while ((collidingTask = tasks.find(
+            task => task.id !== newTaskId && isColliding(testPosition, task.position)
+        ))) {
+            const collidingDim = getTaskDimensions(collidingTask.id);
+            const height = Math.max(DEFAULT_TASK_HEIGHT, collidingDim.height);
+            testPosition = { x: testPosition.x, y: testPosition.y + height + GAP };
         }
         return testPosition;
     }
@@ -168,7 +167,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
 
         const newPosition = { x: rawX, y: rawY };
         const hasCollision = tasks.some(t =>
-            t.id !== active.id && isColliding(newPosition, t.position, active.id, task.id)
+            t.id !== active.id && isColliding(newPosition, t.position, active.id, t.id)
         );
         if (hasCollision) {
             showToast("La tarea no puede ubicarse sobre otra");
