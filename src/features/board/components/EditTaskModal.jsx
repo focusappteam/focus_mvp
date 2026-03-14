@@ -260,7 +260,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   function handleComplete() {
     handlePauseTimer();
     if (onComplete) {
-      onComplete(Task.id)
+      onComplete(task.id)
     }
     onClose();
   }
