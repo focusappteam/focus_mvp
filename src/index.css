@@ -1,7 +1,21 @@
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+        :root {
+            --color-primary: #4c6f70;
+            --color-background: #f7f7f7;
+            --color-dark: #171b1b;
+        }
+
+        html,
+        body,
+        #root {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-dark);
+        }

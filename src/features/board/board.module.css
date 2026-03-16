@@ -1,0 +1,264 @@
+.canvas {
+    --grid-size: 32px;
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background-color: #f7f7f7;
+    background-image:
+        radial-gradient(circle, rgba(23, 27, 27, 0.15) 1px, transparent 1px);
+    background-size:
+        calc(var(--grid-size) * var(--zoom)) calc(var(--grid-size) * var(--zoom));
+}
+
+.canvas {
+    cursor: default;
+}
+
+.canvas:hover {
+    cursor: default;
+}
+
+.canvas:active {
+    cursor: grabbing;
+}
+
+.panning {
+    cursor: grabbing !important;
+}
+
+.world {
+    position: relative;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+}
+
+.viewport {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.hint {
+    position: absolute;
+    bottom: 20px;
+    right: 24px;
+    font-size: 12px;
+    color: rgba(23, 27, 27, 0.5);
+    pointer-events: none;
+}
+
+.zoomControls {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+    background: rgba(247, 247, 247, 0.7);
+    backdrop-filter: blur(6px);
+    padding: 6px;
+    border-radius: 14px;
+}
+
+.zoomControls button {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(76, 111, 112, 0.15);
+    color: var(--color-primary);
+    font-size: 18px;
+    font-weight: 700;
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zoomControls button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.zoomControls button:active {
+    transform: translateY(0);
+    box-shadow:
+        0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.createTaskButton {
+    position: absolute;
+    bottom: 80px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    color: var(--color-background);
+    font-size: 28px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    z-index: 30;
+}
+
+.createTaskButton:hover {
+    transform: scale(1.05);
+}
+
+.task {
+    position: absolute;
+    background: var(--color-background);
+    color: var(--color-dark);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 20px 20px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    width: 250px;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.10s ease, box-shadow 0.10s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.upperSection{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+}
+
+.icon{
+    color: gray;
+}
+
+.title{
+    font-size: 1em;
+    font-weight: 600;
+    margin:0;
+    margin-bottom: 0.8em;
+}
+
+.priority{
+    font-size: 0.7em;
+    text-transform: uppercase;
+    font-weight: 700;
+    width: fit-content;
+    align-self: flex-start;
+    padding: 2.5px 6px;
+    border-radius: 5px;
+}
+
+.priority p{
+    display: inline;
+}
+
+.tagsContainer{
+    display: flex;
+    gap:5px
+}
+
+.tag{
+    font-size: 0.6em;
+    background-color: #e7e7e7;
+    color: #525252;
+    width: fit-content;
+    padding: 2.5px 6px;
+    font-weight: 700;
+    border-radius: 5px;
+}
+
+.Low {
+    background-color: #d7ffe5;
+    color: rgb(1, 133, 1);
+}
+
+.Medium {
+    background-color: rgb(247, 214, 152);
+    color: rgb(141, 92, 0);
+}
+
+.High {
+    background-color: rgb(249, 98, 98);
+    color: rgb(135, 2, 2);
+}
+
+/* Progress bar for subtasks */
+.subtaskRow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.subtaskLabel {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    color: #999;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.progressBar {
+    flex: 1;
+    min-width: 40px;
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: #4a7c70;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.progressPct {
+    font-size: 9px;
+    color: #999;
+    font-weight: 600;
+}
+
+.task:hover {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.taskCompleted {
+    background: #eef2f1;
+    color: #6b7280;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    opacity: 0.75;
+    transition: all 0.2s ease;
+}
+.taskCompleted h3{
+    text-decoration: line-through;
+}
+
+.taskCompleted:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+
+@media (max-width: 768px) {
+    .canvas {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 768px) {
+    .hint {
+        display: none;
+    }
+
+    .zoomControls {
+        bottom: 16px;
+        left: 16px;
+    }
+}
+
