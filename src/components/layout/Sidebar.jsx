@@ -127,11 +127,13 @@ function Sidebar() {
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
     );
 
-    function handleCreate() {
+    async function handleCreate() {
         const trimmed = newName.trim();
         if (!trimmed) { setIsCreating(false); return; }
-        const newWs = createWorkspace(trimmed);
-        selectWorkspace(newWs.id);
+        const newWs = await createWorkspace(trimmed);
+        if (newWs?.id) {
+            selectWorkspace(newWs.id);
+        }
         setNewName("");
         setIsCreating(false);
     }

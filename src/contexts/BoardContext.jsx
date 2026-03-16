@@ -1,4 +1,5 @@
 import { supabase } from '../utils/supabase'
+
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 const BoardContext = createContext(null);
@@ -48,8 +49,31 @@ export function BoardProvider({ children }) {
     );
 
     // --- Workspace actions ---
-    const createWorkspace = useCallback((name) => {
-        const newWs = { id: `ws-${Date.now()}`, name };
+    const createWorkspace = useCallback(async (name) => {
+        const trimmed = name.trim();
+        if (!trimmed) return null;
+
+        let newWs = { id: `ws-${Date.now()}`, name: trimmed };
+
+        try {
+            const { data, error } = await supabase
+                .from("workspaces")
+                .insert({
+                    name: trimmed,
+                    sort_order: workspaces.length,
+                })
+                .select("id, name")
+                .single();
+
+            if (error) throw error;
+
+            if (data?.id) {
+                newWs = { id: data.id, name: data.name ?? trimmed };
+            }
+        } catch (error) {
+            console.error("Failed to create workspace in Supabase:", error);
+        }
+
         const updated = [...workspaces, newWs];
         persistWorkspaces(updated);
         return newWs;
@@ -58,10 +82,29 @@ export function BoardProvider({ children }) {
     const renameWorkspace = useCallback((id, name) => {
         const trimmed = name.trim();
         if (!trimmed) return;
+
+        const currentWorkspace = workspaces.find(ws => ws.id === id);
+        if (!currentWorkspace) return;
+        if (currentWorkspace.name === trimmed) return;
+
         persistWorkspaces(workspaces.map(ws => ws.id === id ? { ...ws, name: trimmed } : ws));
+
+        void (async () => {
+            const { error } = await supabase
+                .from("workspaces")
+                .update({ name: trimmed })
+                .eq("id", id);
+
+            if (error) {
+                console.error("Failed to rename workspace in Supabase:", error);
+            }
+        })();
     }, [workspaces]);
 
     const deleteWorkspace = useCallback((id) => {
+        const workspaceExists = workspaces.some(ws => ws.id === id);
+        if (!workspaceExists) return;
+
         const updated = workspaces.filter(ws => ws.id !== id);
         persistWorkspaces(updated);
         // Remove all tasks belonging to that workspace
@@ -71,6 +114,17 @@ export function BoardProvider({ children }) {
             const next = updated[0]?.id ?? null;
             persistActiveWorkspace(next);
         }
+
+        void (async () => {
+            const { error } = await supabase
+                .from("workspaces")
+                .delete()
+                .eq("id", id);
+
+            if (error) {
+                console.error("Failed to delete workspace in Supabase:", error);
+            }
+        })();
     }, [workspaces, allTasks, activeWorkspaceId]);
 
     const reorderWorkspaces = useCallback((reordered) => {
@@ -85,22 +139,119 @@ export function BoardProvider({ children }) {
     const addTask = useCallback((task) => {
         const taskWithWorkspace = { ...task, workspaceId: activeWorkspaceId };
         persistTasks([...allTasks, taskWithWorkspace]);
+
+        if (!taskWithWorkspace.workspaceId) return;
+
+        const payload = {
+            id: taskWithWorkspace.id,
+            workspace_id: taskWithWorkspace.workspaceId,
+            title: taskWithWorkspace.title ?? "",
+            description: taskWithWorkspace.description ?? "",
+            status: taskWithWorkspace.status ?? "todo",
+            category: taskWithWorkspace.category ?? "General",
+            priority: taskWithWorkspace.priority ?? "Medium",
+            tags: Array.isArray(taskWithWorkspace.tags) ? taskWithWorkspace.tags : [],
+            checklist: Array.isArray(taskWithWorkspace.checklist) ? taskWithWorkspace.checklist : [],
+            color: taskWithWorkspace.style?.color ?? taskWithWorkspace.color ?? null,
+            position_x: Number(taskWithWorkspace.position?.x ?? 0),
+            position_y: Number(taskWithWorkspace.position?.y ?? 0),
+            time_active: Number(taskWithWorkspace.timeActive ?? 0),
+            created_at: taskWithWorkspace.createdAt ?? new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+
+        void (async () => {
+            const { error } = await supabase
+                .from("tasks")
+                .insert(payload);
+
+            if (error) {
+                console.error("Failed to create task in Supabase:", error);
+            }
+        })();
     }, [allTasks, activeWorkspaceId]);
 
     const updateTask = useCallback((updatedTask) => {
         persistTasks(allTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
-    }, [allTasks]);
+
+        if (!updatedTask?.id) return;
+
+        const payload = {
+            workspace_id: updatedTask.workspaceId ?? activeWorkspaceId,
+            title: updatedTask.title ?? "",
+            description: updatedTask.description ?? "",
+            status: updatedTask.status ?? "todo",
+            category: updatedTask.category ?? "General",
+            priority: updatedTask.priority ?? "Medium",
+            tags: Array.isArray(updatedTask.tags) ? updatedTask.tags : [],
+            checklist: Array.isArray(updatedTask.checklist) ? updatedTask.checklist : [],
+            color: updatedTask.style?.color ?? updatedTask.color ?? null,
+            position_x: Number(updatedTask.position?.x ?? 0),
+            position_y: Number(updatedTask.position?.y ?? 0),
+            time_active: Number(updatedTask.timeActive ?? 0),
+            updated_at: new Date().toISOString(),
+        };
+
+        void (async () => {
+            const { error } = await supabase
+                .from("tasks")
+                .update(payload)
+                .eq("id", updatedTask.id);
+
+            if (error) {
+                console.error("Failed to update task in Supabase:", error);
+            }
+        })();
+    }, [allTasks, activeWorkspaceId]);
 
     const deleteTask = useCallback((taskId) => {
+        const taskExists = allTasks.some(t => t.id === taskId);
+        if (!taskExists) return;
+
         persistTasks(allTasks.filter(t => t.id !== taskId));
+
+        void (async () => {
+            const { error } = await supabase
+                .from("tasks")
+                .delete()
+                .eq("id", taskId);
+
+            if (error) {
+                console.error("Failed to delete task in Supabase:", error);
+            }
+        })();
     }, [allTasks]);
 
     const completeTask = useCallback((taskId) => {
+        const currentTask = allTasks.find(t => t.id === taskId);
+        if (!currentTask || currentTask.status === "completed") return;
+
+        const nextTags = Array.isArray(currentTask.tags)
+            ? currentTask.tags.includes("COMPLETED")
+                ? currentTask.tags
+                : [...currentTask.tags, "COMPLETED"]
+            : ["COMPLETED"];
+
         persistTasks(allTasks.map(t =>
-            t.id === taskId && t.status !== "completed"
-                ? { ...t, status: "completed", tags: [...(t.tags || []), "COMPLETED"] }
+            t.id === taskId
+                ? { ...t, status: "completed", tags: nextTags }
                 : t
         ));
+
+        void (async () => {
+            const { error } = await supabase
+                .from("tasks")
+                .update({
+                    status: "completed",
+                    tags: nextTags,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq("id", taskId);
+
+            if (error) {
+                console.error("Failed to complete task in Supabase:", error);
+            }
+        })();
     }, [allTasks]);
 
     // --- Value ---
