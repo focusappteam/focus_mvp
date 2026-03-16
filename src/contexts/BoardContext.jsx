@@ -1,3 +1,4 @@
+import { supabase } from '../utils/supabase'
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 
 const BoardContext = createContext(null);
@@ -24,7 +25,6 @@ export function BoardProvider({ children }) {
         }
         return [];
     });
-
     // --- Persist helpers ---
     function persistWorkspaces(updated) {
         setWorkspaces(updated);
