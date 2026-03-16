@@ -11,7 +11,7 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
-import styles from "./stats.module.css";
+import styles from "./Stats.module.css";
 
 const mockTasks = [
   {
