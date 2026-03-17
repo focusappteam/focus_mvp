@@ -372,3 +372,8 @@
 .avatar:first-child {
     margin-left: 0;
 }
+
+.tagDefault {
+    background: #f0f0ee;
+    color: #555;
+}

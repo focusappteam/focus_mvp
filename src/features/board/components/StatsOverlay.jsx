@@ -1,73 +1,83 @@
 import { useState } from "react";
 import {
-  Download,
-  X,
-  TrendingUp,
-  CheckCircle,
-  Flame,
-  Clock,
-  FileText,
-  Link,
-  LayoutGrid,
-  List,
+  Download, X, TrendingUp, Clock,
+  Flame, Timer, FileText, LayoutGrid, List,
 } from "lucide-react";
 import styles from "./Stats.module.css";
+import { useStatsData, formatDuration } from "../../stats/hooks/useStatsData";
+import { useBoard } from "../../../contexts/BoardContext";
 
-const mockTasks = [
-  {
-    id: 1,
-    date: "TODAY, OCTOBER 26",
-    title: "Design System Audit & Documentation",
-    tag: "PRODUCT DESIGN",
-    tagClass: "tagProductDesign",
-    time: "3h 45m",
-    checklist: { done: 8, total: 8 },
-    Icon: FileText,
-    avatars: ["#4c6f70", "#6b9e94"],
-  },
-  {
-    id: 2,
-    date: "TODAY, OCTOBER 26",
-    title: "API Integration for Dashboard Analytics",
-    tag: "ENGINEERING",
-    tagClass: "tagEngineering",
-    time: "1h 20m",
-    checklist: { done: 3, total: 3 },
-    Icon: Link,
-    avatars: ["#c17b5e"],
-  },
-  {
-    id: 3,
-    date: "YESTERDAY, OCTOBER 25",
-    title: "Weekly Sync & Strategy Refinement",
-    tag: "PLANNING",
-    tagClass: "tagPlanning",
-    time: "45m",
-    checklist: { done: 1, total: 1 },
-    Icon: CheckCircle,
-    avatars: ["#4c6f70"],
-  },
-];
+// Mapea category → clase CSS del tag
+function tagClass(category) {
+  const map = {
+    'PRODUCT DESIGN': styles.tagProductDesign,
+    'ENGINEERING': styles.tagEngineering,
+    'PLANNING': styles.tagPlanning,
+    'General': styles.tagDefault,
+  };
+  return map[category] ?? styles.tagDefault;
+}
+
+// Formatea fecha para el label del grupo
+function toDateLabel(isoString) {
+  const d = new Date(isoString);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (d.toDateString() === today.toDateString())
+    return `TODAY, ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }).toUpperCase()}`;
+  if (d.toDateString() === yesterday.toDateString())
+    return `YESTERDAY, ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }).toUpperCase()}`;
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+}
 
 export default function StatsOverlay({ onClose }) {
   const [view, setView] = useState("grid");
+  const [daysRange, setDaysRange] = useState(30);
+  const { activeWorkspaceId } = useBoard();
 
-  const grouped = mockTasks.reduce((acc, task) => {
-    if (!acc[task.date]) acc[task.date] = [];
-    acc[task.date].push(task);
+  const { stats, sessions, loading } = useStatsData({
+    workspaceId: activeWorkspaceId,
+    daysRange,
+  });
+
+  // Mapear sessions al shape de la UI
+  const mappedSessions = sessions.map(s => {
+    const checklist = Array.isArray(s.task_checklist) ? s.task_checklist : [];
+    return {
+      id: s.id,
+      date: toDateLabel(s.started_at),
+      title: s.task_title || 'Untitled',
+      category: s.task_category || 'General',
+      time: formatDuration(s.duration_seconds ?? 0),
+      checklist: {
+        done: checklist.filter(i => i.checked).length,
+        total: checklist.length,
+      },
+      tags: Array.isArray(s.task_tags) ? s.task_tags : [],
+    };
+  });
+
+  // Agrupar por fecha
+  const grouped = mappedSessions.reduce((acc, s) => {
+    if (!acc[s.date]) acc[s.date] = [];
+    acc[s.date].push(s);
     return acc;
   }, {});
 
   return (
-    <div className={styles.backdrop} onClick={onClose}>
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+    <div className={styles.backdrop}>
+      <div className={styles.panel}>
+
+        {/* ── Header ── */}
         <div className={styles.header}>
           <div>
             <h1 className={styles.title}>Completed Tasks</h1>
             <p className={styles.subtitle}>
-              You focused for <strong>24h 15m</strong> this week. Maintaining
-              deep state.
+              You focused for{' '}
+              <strong>{loading ? '...' : stats.totalFocusTime}</strong>{' '}
+              in the last {daysRange} days.
             </p>
           </div>
           <div className={styles.headerActions}>
@@ -80,128 +90,164 @@ export default function StatsOverlay({ onClose }) {
           </div>
         </div>
 
-        {/* Stats cards */}
+        {/* ── Stats cards ── */}
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>COMPLETED</span>
-            <span className={styles.statValue}>128</span>
+            <span className={styles.statValue}>
+              {loading ? '—' : stats.completedCount}
+            </span>
             <span className={styles.statSub}>
-              <TrendingUp size={12} /> +12% vs last week
+              <TrendingUp size={12} /> Tasks done
             </span>
           </div>
+
           <div className={styles.statCard}>
             <span className={styles.statLabel}>FOCUS TIME</span>
-            <span className={styles.statValue}>84h 20m</span>
+            <span className={styles.statValue}>
+              {loading ? '—' : stats.totalFocusTime}
+            </span>
             <span className={styles.statSub}>
-              <TrendingUp size={12} /> +5% intensity
+              <Clock size={12} /> Total focused
             </span>
           </div>
+
           <div className={styles.statCard}>
             <span className={styles.statLabel}>AVG SESSION</span>
-            <span className={styles.statValue}>52m</span>
+            <span className={styles.statValue}>
+              {loading ? '—' : stats.avgSession}
+            </span>
             <span className={styles.statSub}>
-              <CheckCircle size={12} /> Highly Consistent
+              <Timer size={12} />
+              {!loading && parseInt(stats.avgSession) >= 45
+                ? 'Highly Consistent'
+                : !loading && parseInt(stats.avgSession) >= 25
+                  ? 'Consistent'
+                  : 'Building Habit'}
             </span>
           </div>
+
           <div className={`${styles.statCard} ${styles.statCardAccent}`}>
             <span className={styles.statLabel}>DEEP WORK STREAK</span>
-            <span className={styles.statValue}>14 Days</span>
+            <span className={styles.statValue}>
+              {loading ? '—' : `${stats.streak} ${stats.streak === 1 ? 'Day' : 'Days'}`}
+            </span>
             <span className={`${styles.statSub} ${styles.statSubWarm}`}>
-              <Flame size={12} /> Personal Record
+              <Flame size={12} />
+              {!loading && stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
             </span>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* ── Filtros ── */}
         <div className={styles.filtersRow}>
           <div className={styles.filterGroup}>
             <button className={styles.filterActive}>All Sessions</button>
-            <button className={styles.filterBtn}>
-              Project: Design System ▾
-            </button>
-            <button className={styles.filterBtn}>Last 30 Days ▾</button>
+            {[7, 30, 90].map(d => (
+              <button
+                key={d}
+                className={daysRange === d ? styles.filterActive : styles.filterBtn}
+                onClick={() => setDaysRange(d)}
+              >
+                Last {d} Days
+              </button>
+            ))}
           </div>
           <div className={styles.viewGroup}>
             <button
-              className={`${styles.viewBtn} ${view === "grid" ? styles.viewBtnActive : ""}`}
-              onClick={() => setView("grid")}
+              className={`${styles.viewBtn} ${view === 'grid' ? styles.viewBtnActive : ''}`}
+              onClick={() => setView('grid')}
             >
-              <LayoutGrid size={16} />
+              <LayoutGrid size={15} />
             </button>
             <button
-              className={`${styles.viewBtn} ${view === "list" ? styles.viewBtnActive : ""}`}
-              onClick={() => setView("list")}
+              className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`}
+              onClick={() => setView('list')}
             >
-              <List size={16} />
+              <List size={15} />
             </button>
           </div>
         </div>
 
-        {/* Task list */}
-        <div className={styles.taskList}>
-          {Object.entries(grouped).map(([date, tasks]) => (
-            <div key={date}>
-              <p className={styles.dateLabel}>{date}</p>
-              <div
-                className={
-                  view === "grid" ? styles.taskGrid : styles.taskColumn
-                }
-              >
-                {tasks.map((task) => {
-                  const progress =
-                    (task.checklist.done / task.checklist.total) * 100;
-                  const TaskIcon = task.Icon;
-                  return (
-                    <div key={task.id} className={styles.taskCard}>
-                      <div className={styles.taskCardHeader}>
-                        <div>
-                          <h3 className={styles.taskTitle}>{task.title}</h3>
-                          <span
-                            className={`${styles.taskTag} ${styles[task.tagClass]}`}
-                          >
-                            {task.tag}
-                          </span>
+        {/* ── Lista de sesiones ── */}
+        {loading ? (
+          <p style={{ color: '#aaa', textAlign: 'center', padding: '40px 0' }}>
+            Loading sessions...
+          </p>
+        ) : Object.keys(grouped).length === 0 ? (
+          <p style={{ color: '#aaa', textAlign: 'center', padding: '40px 0' }}>
+            No sessions yet. Start focusing!
+          </p>
+        ) : (
+          <div className={styles.taskList}>
+            {Object.entries(grouped).map(([date, dateSessions]) => (
+              <div key={date}>
+                <p className={styles.dateLabel}>{date}</p>
+                <div className={view === 'grid' ? styles.taskGrid : styles.taskColumn}>
+                  {dateSessions.map(session => {
+                    const progress = session.checklist.total > 0
+                      ? (session.checklist.done / session.checklist.total) * 100
+                      : 0;
+
+                    return (
+                      <div key={session.id} className={styles.taskCard}>
+                        <div className={styles.taskCardHeader}>
+                          <div>
+                            <p className={styles.taskTitle}>{session.title}</p>
+                            <span className={`${styles.taskTag} ${tagClass(session.category)}`}>
+                              {session.category.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className={styles.taskTimeBadge}>
+                            <span className={styles.taskTime}>
+                              <Clock size={12} /> {session.time}
+                            </span>
+                            <span className={styles.taskFocused}>FOCUSED</span>
+                          </div>
                         </div>
-                        <div className={styles.taskTimeBadge}>
-                          <span className={styles.taskTime}>
-                            <Clock size={12} /> {task.time}
-                          </span>
-                          <span className={styles.taskFocused}>FOCUSED</span>
-                        </div>
+
+                        {session.checklist.total > 0 && (
+                          <>
+                            <div className={styles.checklistRow}>
+                              <span className={styles.checklistLabel}>CHECKLIST SUMMARY</span>
+                              <span className={styles.checklistCount}>
+                                {session.checklist.done} / {session.checklist.total} DONE
+                              </span>
+                              <div className={styles.iconCircle}>
+                                <FileText size={13} />
+                              </div>
+                            </div>
+                            <div className={styles.progressBar}>
+                              <div
+                                className={styles.progressFill}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* Tags como avatares de color */}
+                        {session.tags.length > 0 && (
+                          <div className={styles.avatarRow}>
+                            {session.tags.slice(0, 3).map((tag, i) => (
+                              <div
+                                key={i}
+                                className={styles.avatar}
+                                style={{ background: `hsl(${(tag.charCodeAt(0) * 37) % 360}, 40%, 55%)` }}
+                                title={tag}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className={styles.checklistRow}>
-                        <span className={styles.checklistLabel}>
-                          CHECKLIST SUMMARY
-                        </span>
-                        <span className={styles.checklistCount}>
-                          {task.checklist.done} / {task.checklist.total} DONE
-                        </span>
-                        <div className={styles.iconCircle}>
-                          <TaskIcon size={14} />
-                        </div>
-                      </div>
-                      <div className={styles.progressBar}>
-                        <div
-                          className={styles.progressFill}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                      <div className={styles.avatarRow}>
-                        {task.avatars.map((color, i) => (
-                          <div
-                            key={i}
-                            className={styles.avatar}
-                            style={{ background: color }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
+
       </div>
     </div>
   );
