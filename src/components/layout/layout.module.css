@@ -377,7 +377,19 @@
 
 @media (max-width: 1024px) {
     .sidebarWrapper {
-        display: none;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        height: calc(100vh - 60px);
+        z-index: 100;
+        width: 0;
+        overflow: hidden;
+        transition: width 0.25s ease;
+    }
+
+    .sidebarWrapperOpen {
+        width: 220px;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
     }
 }
 
