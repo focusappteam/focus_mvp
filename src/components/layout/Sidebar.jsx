@@ -107,7 +107,7 @@ function SortableWorkspaceItem({ ws, isActive, isRenaming, onContextMenu, onRena
 }
 
 // ---------- Sidebar ----------
-function Sidebar() {
+function Sidebar({ blocked = false }) {
     const {
         workspaces,
         activeWorkspaceId,
@@ -165,6 +165,12 @@ function Sidebar() {
 
     return (
         <aside className={styles.sidebar}>
+            {blocked && (
+                <div
+                    className={styles.sidebarBlockedOverlay}
+                    title="No puedes cambiar de workspace durante una sesión activa"
+                />
+            )}
             <p className={styles.sidebarTitle}>Workspaces</p>
 
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
