@@ -52,8 +52,8 @@ export function useTaskTimer(task) {
   // ── Handlers ──────────────────────────────────────────────
   const handleStart = useCallback((onComplete) => {
     if (!taskId || !canStart) return;
-    start(taskId, onComplete, task?.title);
-  }, [taskId, canStart, start, task?.title]);
+    start(taskId, onComplete, task?.title, task);
+  }, [taskId, canStart, start, task]);
 
   const handlePause = useCallback((onSave) => {
     if (!isThisTaskTimer) return;

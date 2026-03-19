@@ -91,6 +91,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
   useEffect(() => {
     if (task) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         title: task.title || "",
         description: task.description || "",

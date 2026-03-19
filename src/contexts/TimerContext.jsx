@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { saveFocusSession } from '../utils/saveFocusSession';
 
 const POMODORO_DURATION = 1500; // 25 minutes
 const TimerContext = createContext(null);
@@ -77,13 +78,24 @@ export function TimerProvider({ children }) {
           if (rem <= 0) {
             clearInterval(intervalRef.current);
             const cb = listenersRef.current[id];
+            const snapshot = listenersRef.current.__snapshot?.[id];
             let title;
             if (listenersRef.current.__title) {
               title = listenersRef.current.__title[id];
             }
+            saveFocusSession({
+              task: snapshot,
+              mode: 'timer',
+              durationSeconds: POMODORO_DURATION,
+              startedAt: new Date(Date.now() - POMODORO_DURATION * 1000).toISOString(),
+              endedAt: new Date().toISOString(),
+            });
             if (cb) {
               try { cb(); } catch { }
               delete listenersRef.current[id];
+            }
+            if (listenersRef.current.__snapshot?.[id]) {
+              delete listenersRef.current.__snapshot[id];
             }
             if (title) {
               delete listenersRef.current.__title[id];
@@ -112,7 +124,7 @@ export function TimerProvider({ children }) {
     return () => clearInterval(intervalRef.current);
   }, [active]);
 
-  const start = useCallback((taskId, onComplete, taskTitle) => {
+  const start = useCallback((taskId, onComplete, taskTitle, taskSnapshot = null) => {
     if (onComplete) {
       listenersRef.current[taskId] = onComplete;
     }
@@ -120,6 +132,15 @@ export function TimerProvider({ children }) {
       listenersRef.current.__title = listenersRef.current.__title || {};
       listenersRef.current.__title[taskId] = `Buen trabajo en "${taskTitle}"!`;
     }
+    listenersRef.current.__snapshot = listenersRef.current.__snapshot || {};
+    listenersRef.current.__snapshot[taskId] = taskSnapshot;
+
+    // ← Resetear flag al arrancar nueva sesión
+    listenersRef.current.__saved = listenersRef.current.__saved || {};
+    listenersRef.current.__saved[taskId] = false;
+
+
+
     setState(prev => {
       const now = Date.now();
       const newTimers = { ...prev.timers };
@@ -171,6 +192,23 @@ export function TimerProvider({ children }) {
       const timer = prev.timers[id];
       if (!timer || !timer.isRunning) return prev;
 
+      if (timer.startedAt) {
+        const elapsed = Math.floor((Date.now() - timer.startedAt) / 1000);
+        const snapshot = listenersRef.current.__snapshot?.[id];
+        const alreadySaved = listenersRef.current.__saved?.[id];
+        if (elapsed >= 10 && !alreadySaved) {
+          listenersRef.current.__saved = listenersRef.current.__saved || {};
+          listenersRef.current.__saved[id] = true;
+
+          saveFocusSession({
+            task: snapshot,
+            mode: timer.mode,
+            durationSeconds: elapsed,
+            startedAt: new Date(timer.startedAt).toISOString(),
+            endedAt: new Date().toISOString(),
+          });
+        }
+      }
       // For stopwatch: elapsedTime is already updated by the interval, just stop
       // For timer: remainingTime is already updated by the interval, just stop
       return {
