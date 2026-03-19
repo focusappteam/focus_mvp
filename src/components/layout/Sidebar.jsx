@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import StatsOverlay from "../../features/board/components/StatsOverlay";
 import styles from "./layout.module.css";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/UI/Toast";
 import { LayoutGrid, Plus, GripVertical } from "lucide-react";
 import { useBoard } from "../../contexts/BoardContext";
 import {
@@ -123,6 +125,7 @@ function Sidebar() {
     const [newName, setNewName] = useState("");
     const [contextMenu, setContextMenu] = useState(null);
     const [renamingId, setRenamingId] = useState(null);
+    const { toast, toastVisible, showToast } = useToast();
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -131,9 +134,21 @@ function Sidebar() {
     async function handleCreate() {
         const trimmed = newName.trim();
         if (!trimmed) { setIsCreating(false); return; }
-        const newWs = await createWorkspace(trimmed);
-        if (newWs?.id) {
-            selectWorkspace(newWs.id);
+        const result = await createWorkspace(trimmed);
+        if (result?.error === 'limit') {
+            showToast("Máximo 5 workspaces permitidos");
+            setIsCreating(false);
+            setNewName("");
+            return;
+        }
+        if (result?.error === 'duplicate') {
+            showToast("Ya existe un workspace con ese nombre");
+            setIsCreating(false);
+            setNewName("");
+            return;
+        }
+        if (result?.id) {
+            selectWorkspace(result.id);
         }
         setNewName("");
         setIsCreating(false);
@@ -167,78 +182,79 @@ function Sidebar() {
     }
 
     return (
-      <aside className={styles.sidebar}>
-        <p className={styles.sidebarTitle}>Workspaces</p>
+        <aside className={styles.sidebar}>
+            <p className={styles.sidebarTitle}>Workspaces</p>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={workspaces.map((ws) => ws.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <ul className={styles.navList}>
-              {workspaces.map((ws) => (
-                <SortableWorkspaceItem
-                  key={ws.id}
-                  ws={ws}
-                  isActive={ws.id === activeWorkspaceId}
-                  isRenaming={renamingId === ws.id}
-                  onContextMenu={handleContextMenu}
-                  onRenameSubmit={handleRenameSubmit}
-                  onRenameCancel={() => setRenamingId(null)}
-                  onSelect={selectWorkspace}
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={workspaces.map((ws) => ws.id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    <ul className={styles.navList}>
+                        {workspaces.map((ws) => (
+                            <SortableWorkspaceItem
+                                key={ws.id}
+                                ws={ws}
+                                isActive={ws.id === activeWorkspaceId}
+                                isRenaming={renamingId === ws.id}
+                                onContextMenu={handleContextMenu}
+                                onRenameSubmit={handleRenameSubmit}
+                                onRenameCancel={() => setRenamingId(null)}
+                                onSelect={selectWorkspace}
+                            />
+                        ))}
+                    </ul>
+                </SortableContext>
+            </DndContext>
+
+            {isCreating ? (
+                <div className={styles.createInputWrapper}>
+                    <input
+                        autoFocus
+                        className={styles.createInput}
+                        placeholder="Nombre del workspace..."
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={handleCreateKeyDown}
+                        onBlur={handleCreate}
+                    />
+                </div>
+            ) : (
+                <button
+                    className={styles.createButton}
+                    onClick={() => setIsCreating(true)}
+                >
+                    <Plus size={14} />
+                    Crear nuevo
+                </button>
+            )}
+
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onRename={() => {
+                        setRenamingId(contextMenu.wsId);
+                        setContextMenu(null);
+                    }}
+                    onDelete={() => handleDelete(contextMenu.wsId)}
+                    onClose={() => setContextMenu(null)}
                 />
-              ))}
-            </ul>
-          </SortableContext>
-        </DndContext>
+            )}
+            <button
+                className={styles.statsButton}
+                onClick={() => setShowStats(true)}
+            >
+                Statistics
+            </button>
 
-        {isCreating ? (
-          <div className={styles.createInputWrapper}>
-            <input
-              autoFocus
-              className={styles.createInput}
-              placeholder="Nombre del workspace..."
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={handleCreateKeyDown}
-              onBlur={handleCreate}
-            />
-          </div>
-        ) : (
-          <button
-            className={styles.createButton}
-            onClick={() => setIsCreating(true)}
-          >
-            <Plus size={14} />
-            Crear nuevo
-          </button>
-        )}
-
-        {contextMenu && (
-          <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onRename={() => {
-              setRenamingId(contextMenu.wsId);
-              setContextMenu(null);
-            }}
-            onDelete={() => handleDelete(contextMenu.wsId)}
-            onClose={() => setContextMenu(null)}
-          />
-        )}
-        <button
-          className={styles.statsButton}
-          onClick={() => setShowStats(true)}
-        >
-          Statistics
-        </button>
-
-        {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
-      </aside>
+            {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
+            <Toast message={toast} visible={toastVisible} />
+        </aside>
     );
 }
 
