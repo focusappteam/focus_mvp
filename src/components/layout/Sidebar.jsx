@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import StatsOverlay from "../../features/board/components/StatsOverlay";
 import styles from "./layout.module.css";
 import { LayoutGrid, Plus, GripVertical } from "lucide-react";
 import { useBoard } from "../../contexts/BoardContext";
@@ -117,7 +118,7 @@ function Sidebar({ blocked = false }) {
         reorderWorkspaces,
         selectWorkspace,
     } = useBoard();
-
+    const [showStats, setShowStats] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState("");
     const [contextMenu, setContextMenu] = useState(null);
@@ -127,11 +128,13 @@ function Sidebar({ blocked = false }) {
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
     );
 
-    function handleCreate() {
+    async function handleCreate() {
         const trimmed = newName.trim();
         if (!trimmed) { setIsCreating(false); return; }
-        const newWs = createWorkspace(trimmed);
-        selectWorkspace(newWs.id);
+        const newWs = await createWorkspace(trimmed);
+        if (newWs?.id) {
+            selectWorkspace(newWs.id);
+        }
         setNewName("");
         setIsCreating(false);
     }
@@ -210,17 +213,78 @@ function Sidebar({ blocked = false }) {
                     Crear nuevo
                 </button>
             )}
+      <aside className={styles.sidebar}>
+        <p className={styles.sidebarTitle}>Workspaces</p>
 
-            {contextMenu && (
-                <ContextMenu
-                    x={contextMenu.x}
-                    y={contextMenu.y}
-                    onRename={() => { setRenamingId(contextMenu.wsId); setContextMenu(null); }}
-                    onDelete={() => handleDelete(contextMenu.wsId)}
-                    onClose={() => setContextMenu(null)}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={workspaces.map((ws) => ws.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className={styles.navList}>
+              {workspaces.map((ws) => (
+                <SortableWorkspaceItem
+                  key={ws.id}
+                  ws={ws}
+                  isActive={ws.id === activeWorkspaceId}
+                  isRenaming={renamingId === ws.id}
+                  onContextMenu={handleContextMenu}
+                  onRenameSubmit={handleRenameSubmit}
+                  onRenameCancel={() => setRenamingId(null)}
+                  onSelect={selectWorkspace}
                 />
-            )}
-        </aside>
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+
+        {isCreating ? (
+          <div className={styles.createInputWrapper}>
+            <input
+              autoFocus
+              className={styles.createInput}
+              placeholder="Nombre del workspace..."
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={handleCreateKeyDown}
+              onBlur={handleCreate}
+            />
+          </div>
+        ) : (
+          <button
+            className={styles.createButton}
+            onClick={() => setIsCreating(true)}
+          >
+            <Plus size={14} />
+            Crear nuevo
+          </button>
+        )}
+
+        {contextMenu && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            onRename={() => {
+              setRenamingId(contextMenu.wsId);
+              setContextMenu(null);
+            }}
+            onDelete={() => handleDelete(contextMenu.wsId)}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
+        <button
+          className={styles.statsButton}
+          onClick={() => setShowStats(true)}
+        >
+          Statistics
+        </button>
+
+        {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
+      </aside>
     );
 }
 
