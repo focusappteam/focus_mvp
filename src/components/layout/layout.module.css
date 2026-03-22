@@ -180,6 +180,16 @@
     opacity: 1;
 }
 
+.navItem.active {
+    background: rgba(76, 111, 112, 0.1);
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.navItem.active .navIcon {
+    color: var(--color-primary);
+}
+
 .dragHandle {
     display: flex;
     align-items: center;
@@ -355,9 +365,32 @@
     overflow: hidden;
 }
 
+/* Sidebar bloqueado */
+.sidebarBlockedOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(1.5px);
+    border-radius: inherit;
+    z-index: 10;
+    cursor: not-allowed;
+}
+
 @media (max-width: 1024px) {
     .sidebarWrapper {
-        display: none;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        height: calc(100vh - 60px);
+        z-index: 100;
+        width: 0;
+        overflow: hidden;
+        transition: width 0.25s ease;
+    }
+
+    .sidebarWrapperOpen {
+        width: 220px;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
     }
 }
 
