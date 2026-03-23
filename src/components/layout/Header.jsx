@@ -2,7 +2,7 @@ import styles from "./layout.module.css";
 import { useTimer } from "../../contexts/TimerContext";
 import { useBoard } from "../../contexts/BoardContext";
 import FocusButton from "../../features/focusMode/components/FocusButton";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTaskTimer } from "../../features/focusMode/hooks/useTaskTimer";
 import { Menu, LogOut } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -13,6 +13,7 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     const { allTasks } = useBoard();
     const { user, profile, signOut } = useAuth();
     const navigate = useNavigate();
+    const [isSigningOut, setIsSigningOut] = useState(false);
 
 
     // Now reads from context instead of localStorage directly
@@ -24,8 +25,22 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     const { formattedTime, isStopwatch, isRunning } = useTaskTimer(activeTask);
 
     async function handleSignOut() {
-        await signOut();
-        navigate("/login", { replace: true });
+        if (isSigningOut) return;
+
+        setIsSigningOut(true);
+        try {
+            const { error } = await signOut();
+            if (error) {
+                console.error("Sign-out completed with warning:", error);
+            }
+
+            navigate("/login", { replace: true });
+        } catch (error) {
+            console.error("Sign-out handler failed:", error);
+            navigate("/login", { replace: true });
+        } finally {
+            setIsSigningOut(false);
+        }
     }
     return (
         <header className={styles.header}>
@@ -68,9 +83,11 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
 
                 {/* Botón de logout con ícono */}
                 <button
+                    type="button"
                     onClick={handleSignOut}
                     className={styles.logoutButton}
                     title="Cerrar sesión"
+                    disabled={isSigningOut}
                 >
                     <LogOut size={16} />
                 </button>
