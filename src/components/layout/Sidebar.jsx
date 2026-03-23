@@ -195,6 +195,7 @@ function Sidebar({ blocked = false }) {
             {isCreating ? (
                 <div className={styles.createInputWrapper}>
                     <input
+                        id="nombrewks"
                         autoFocus
                         className={styles.createInput}
                         placeholder="Nombre del workspace..."

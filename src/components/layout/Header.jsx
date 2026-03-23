@@ -4,12 +4,15 @@ import { useBoard } from "../../contexts/BoardContext";
 import FocusButton from "../../features/focusMode/components/FocusButton";
 import { useMemo } from "react";
 import { useTaskTimer } from "../../features/focusMode/hooks/useTaskTimer";
-import { Menu } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     const { state } = useTimer();
     const { allTasks } = useBoard();
-
+    const { user, profile, signOut } = useAuth();
+    const navigate = useNavigate();
 
 
     // Now reads from context instead of localStorage directly
@@ -19,6 +22,11 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
     );
 
     const { formattedTime, isStopwatch, isRunning } = useTaskTimer(activeTask);
+
+    async function handleSignOut() {
+        await signOut();
+        navigate("/login", { replace: true });
+    }
     return (
         <header className={styles.header}>
             <div className={styles.headerLeft}>
@@ -51,7 +59,24 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
             </div>
 
             <input className={styles.search} placeholder="Buscar tareas..." />
-            <div className={styles.userAvatar}>R</div>
+            <div className={styles.userSection}>
+
+                {/* Nombre o email del usuario */}
+                <span className={styles.userName}>
+                    {profile?.full_name ?? user?.email}
+                </span>
+
+                {/* Botón de logout con ícono */}
+                <button
+                    onClick={handleSignOut}
+                    className={styles.logoutButton}
+                    title="Cerrar sesión"
+                >
+                    <LogOut size={16} />
+                </button>
+
+            </div>
+
         </header>
     );
 }

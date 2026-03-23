@@ -2,8 +2,8 @@ import { supabase } from '../utils/supabase'
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 
+import { useAuth } from './AuthContext';
 const BoardContext = createContext(null);
-
 // Convierte una fila de Supabase al shape que usa la app
 function mapTaskFromDB(row) {
     return {
@@ -24,6 +24,17 @@ function mapTaskFromDB(row) {
 }
 
 export function BoardProvider({ children }) {
+    const { user } = useAuth();
+    // Limpiar localStorage cuando no hay usuario (logout o cambio de cuenta)
+    // Esto evita que datos de un usuario aparezcan en otro
+    useEffect(() => {
+        if (!user) {
+            localStorage.removeItem("workspaces");
+            localStorage.removeItem("activeWorkspaceId");
+            localStorage.removeItem("tasks");
+            syncedWorkspacesRef.current.clear();
+        }
+    }, [user]);
     // --- Workspaces ---
     const [workspaces, setWorkspaces] = useState(() => {
         const saved = localStorage.getItem("workspaces");
@@ -71,10 +82,12 @@ export function BoardProvider({ children }) {
 
     // --- Sync inicial: carga workspaces desde Supabase ---
     useEffect(() => {
+        if (!user) return;
         async function loadWorkspaces() {
             const { data, error } = await supabase
                 .from("workspaces")
                 .select("id, name, sort_order")
+                .eq("user_id", user.id)
                 .order("sort_order", { ascending: true });
 
             if (error) {
@@ -98,12 +111,11 @@ export function BoardProvider({ children }) {
         loadWorkspaces();
         // Solo al montar
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user]);
 
 
     useEffect(() => {
         if (!activeWorkspaceId) return;
-
         // Si ya lo sincronizamos con Supabase en esta sesión, no consultamos de nuevo.
         // Los cambios dentro de la sesión ya los manejan addTask/updateTask/deleteTask.
         if (syncedWorkspacesRef.current.has(activeWorkspaceId)) return;
@@ -138,6 +150,10 @@ export function BoardProvider({ children }) {
         }
 
         loadTasks();
+        return () => {
+            // Permite que StrictMode vuelva a cargar correctamente en dev
+            syncedWorkspacesRef.current.delete(activeWorkspaceId);
+        };
     }, [activeWorkspaceId]);
 
     // --- Realtime: workspaces ---
@@ -254,6 +270,7 @@ export function BoardProvider({ children }) {
                 .insert({
                     name: trimmed,
                     sort_order: workspaces.length,
+                    user_id: user?.id,
                 })
                 .select("id, name")
                 .single();
@@ -270,7 +287,7 @@ export function BoardProvider({ children }) {
         const updated = [...workspaces, newWs];
         persistWorkspaces(updated);
         return newWs;
-    }, [workspaces]);
+    }, [workspaces, user]);
 
     const renameWorkspace = useCallback((id, name) => {
         const trimmed = name.trim();
@@ -345,6 +362,7 @@ export function BoardProvider({ children }) {
 
         const payload = {
             id: taskWithWorkspace.id,
+            user_id: user?.id,
             workspace_id: taskWithWorkspace.workspaceId,
             title: taskWithWorkspace.title ?? "",
             description: taskWithWorkspace.description ?? "",
@@ -370,7 +388,7 @@ export function BoardProvider({ children }) {
                 console.error("Failed to create task in Supabase:", error);
             }
         })();
-    }, [allTasks, activeWorkspaceId]);
+    }, [allTasks, activeWorkspaceId, user]);
 
     const updateTask = useCallback((updatedTask) => {
         persistTasks(allTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
