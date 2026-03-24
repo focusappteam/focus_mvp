@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { saveFocusSession } from '../utils/saveFocusSession';
+import { useAuth } from '../contexts/AuthContext';
 
 const POMODORO_DURATION = 1500; // 25 minutes
 const TimerContext = createContext(null);
@@ -36,6 +37,8 @@ export function TimerProvider({ children }) {
     }
     return { taskId: null, timers: {} };
   });
+
+  const { user } = useAuth();
 
   const intervalRef = useRef(null);
   const listenersRef = useRef({});
@@ -84,6 +87,7 @@ export function TimerProvider({ children }) {
               title = listenersRef.current.__title[id];
             }
             saveFocusSession({
+              userId: user?.id,
               task: snapshot,
               mode: 'timer',
               durationSeconds: POMODORO_DURATION,
@@ -122,7 +126,7 @@ export function TimerProvider({ children }) {
       }, 1000);
     }
     return () => clearInterval(intervalRef.current);
-  }, [active]);
+  }, [active, user]);
 
   const start = useCallback((taskId, onComplete, taskTitle, taskSnapshot = null) => {
     if (onComplete) {
@@ -201,6 +205,7 @@ export function TimerProvider({ children }) {
           listenersRef.current.__saved[id] = true;
 
           saveFocusSession({
+            userId: user?.id,
             task: snapshot,
             mode: timer.mode,
             durationSeconds: elapsed,
@@ -223,7 +228,7 @@ export function TimerProvider({ children }) {
         }
       };
     });
-  }, []);
+  }, [user]);
 
   const reset = useCallback(() => {
     setState(prev => {
