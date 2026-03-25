@@ -180,6 +180,16 @@
     opacity: 1;
 }
 
+.navItem.active {
+    background: rgba(76, 111, 112, 0.1);
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.navItem.active .navIcon {
+    color: var(--color-primary);
+}
+
 .dragHandle {
     display: flex;
     align-items: center;
@@ -355,9 +365,32 @@
     overflow: hidden;
 }
 
+/* Sidebar bloqueado */
+.sidebarBlockedOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(1.5px);
+    border-radius: inherit;
+    z-index: 10;
+    cursor: not-allowed;
+}
+
 @media (max-width: 1024px) {
     .sidebarWrapper {
-        display: none;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        height: calc(100vh - 60px);
+        z-index: 100;
+        width: 0;
+        overflow: hidden;
+        transition: width 0.25s ease;
+    }
+
+    .sidebarWrapperOpen {
+        width: 220px;
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
     }
 }
 
@@ -387,4 +420,41 @@
 .statsButton:hover {
     background: #4c6f70;
     color: #fff;
+}
+
+/* ── User section en el Header ─────────────────────────────────── */
+.userSection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* empuja el bloque hacia la derecha */
+}
+
+.userName {
+    font-size: 12px;
+    color: #888;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* si el email es largo, no rompe el layout */
+}
+
+.logoutButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #888;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.logoutButton:hover {
+    color: #f87171;
+    /* rojo suave al hacer hover */
+    border-color: #f87171;
 }
