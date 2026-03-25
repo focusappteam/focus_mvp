@@ -20,6 +20,7 @@ function mapTaskFromDB(row) {
         position: { x: row.position_x ?? 0, y: row.position_y ?? 0 },
         timeActive: row.time_active ?? 0,
         createdAt: row.created_at,
+        dueDate: row.due_date ?? null, // ← AGREGADO
     };
 }
 
@@ -384,6 +385,7 @@ export function BoardProvider({ children }) {
             position_x: Number(taskWithWorkspace.position?.x ?? 0),
             position_y: Number(taskWithWorkspace.position?.y ?? 0),
             time_active: Number(taskWithWorkspace.timeActive ?? 0),
+            due_date: taskWithWorkspace.dueDate ?? null, // ← AGREGADO
             created_at: taskWithWorkspace.createdAt ?? new Date().toISOString(),
             updated_at: new Date().toISOString(),
         };
@@ -418,6 +420,7 @@ export function BoardProvider({ children }) {
             position_x: Number(updatedTask.position?.x ?? 0),
             position_y: Number(updatedTask.position?.y ?? 0),
             time_active: Number(updatedTask.timeActive ?? 0),
+            due_date: updatedTask.dueDate ?? null, // ← AGREGADO
             updated_at: new Date().toISOString(),
         };
 

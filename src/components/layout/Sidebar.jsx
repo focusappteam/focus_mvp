@@ -171,26 +171,33 @@ function Sidebar({ blocked = false }) {
                     title="No puedes cambiar de workspace durante una sesión activa"
                 />
             )}
-            <p className={styles.sidebarTitle}>Workspaces</p>
+        <p className={styles.sidebarTitle}>Workspaces</p>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={workspaces.map(ws => ws.id)} strategy={verticalListSortingStrategy}>
-                    <ul className={styles.navList}>
-                        {workspaces.map(ws => (
-                            <SortableWorkspaceItem
-                                key={ws.id}
-                                ws={ws}
-                                isActive={ws.id === activeWorkspaceId}
-                                isRenaming={renamingId === ws.id}
-                                onContextMenu={handleContextMenu}
-                                onRenameSubmit={handleRenameSubmit}
-                                onRenameCancel={() => setRenamingId(null)}
-                                onSelect={selectWorkspace}
-                            />
-                        ))}
-                    </ul>
-                </SortableContext>
-            </DndContext>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={workspaces.map((ws) => ws.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className={styles.navList}>
+              {workspaces.map((ws) => (
+                <SortableWorkspaceItem
+                  key={ws.id}
+                  ws={ws}
+                  isActive={ws.id === activeWorkspaceId}
+                  isRenaming={renamingId === ws.id}
+                  onContextMenu={handleContextMenu}
+                  onRenameSubmit={handleRenameSubmit}
+                  onRenameCancel={() => setRenamingId(null)}
+                  onSelect={selectWorkspace}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
 
             {isCreating ? (
                 <div className={styles.createInputWrapper}>
