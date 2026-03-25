@@ -808,3 +808,57 @@
     box-shadow: 0 0 0 1px rgba(71 85 105);
     background-color: #f8fafc;
 }
+/* ── Due Date ── */
+.dueDateSection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 22px;
+  flex-wrap: wrap;
+}
+
+.dueDateLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #aaa;
+}
+
+.dueDateIcon {
+  color: #aaa;
+}
+
+.dueDateInput {
+  font-size: 12px;
+  color: #444;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: #fafafa;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.18s;
+}
+
+.dueDateInput:focus {
+  border-color: #4a7c70;
+}
+
+.dueDateClear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #e05c5c;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dueDateClear:hover {
+  text-decoration: underline;
+}

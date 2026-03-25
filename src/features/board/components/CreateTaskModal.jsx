@@ -49,9 +49,9 @@ function CreateTaskModal({ onClose, onCreate, position }) {
         title: "",
         description: "",
         color: "",
-        priority: "Medium"
+        priority: "Medium",
+        dueDate: ""
     });
-
 
     function handleSubmit(e) {
         e.preventDefault();
@@ -66,6 +66,7 @@ function CreateTaskModal({ onClose, onCreate, position }) {
             category: "General",
             priority: form.priority,
             createdAt: new Date().toISOString(),
+            dueDate: form.dueDate || null,
             time: 0,
             timeActive: 0,
             style: { color: form.color },
@@ -85,7 +86,6 @@ function CreateTaskModal({ onClose, onCreate, position }) {
 
                 <form className={styles.form} onSubmit={handleSubmit}>
                     <div className={styles.field}>
-
                         <input
                             type="text"
                             placeholder="Titulo"
@@ -97,18 +97,27 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                     </div>
 
                     <div className={styles.field}>
-
                         <textarea
                             placeholder="Descripción (Opcional)"
                             value={form.description}
                             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                         />
                     </div>
+
                     <div className={styles.field}>
                         <Dropdown
                             value={form.priority}
                             options={["Low", "Medium", "High"]}
                             onChange={val => setForm(f => ({ ...f, priority: val }))}
+                        />
+                    </div>
+
+                    <div className={styles.field}>
+                        <input
+                            type="date"
+                            value={form.dueDate}
+                            onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                            min={new Date().toISOString().split('T')[0]}
                         />
                     </div>
 

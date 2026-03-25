@@ -6,7 +6,7 @@ import Task from "./Task";
 import CreateTaskModal from "./CreateTaskModal";
 import EditTaskModal from "./EditTaskModal";
 import { DndContext } from "@dnd-kit/core";
-import { RotateCcw, Plus, Minus } from "lucide-react";
+import { RotateCcw, Plus, Minus, Bell } from "lucide-react";
 import FocusOverlay from "../../focusMode/components/FocusOverlay";
 import Toast from "../../../components/UI/Toast";
 import { useToast } from "../../../hooks/useToast";
@@ -35,8 +35,56 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
     const panStartRef = useRef({ x: 0, y: 0 });
     const isCreatingRef = useRef(false);
     const isEditingRef = useRef(false);
+
+    // — Notificaciones de fecha —
+    const [dueDateNotif, setDueDateNotif] = useState(null);
+    const dueDateNotifTimer = useRef(null);
+    const shownNotifs = useRef(new Set());
+
     useEffect(() => { isCreatingRef.current = isCreatingTask; }, [isCreatingTask]);
     useEffect(() => { isEditingRef.current = isEditingTask; }, [isEditingTask]);
+
+    // Revisar tareas vencidas o que vencen mañana
+    useEffect(() => {
+        if (!tasks || tasks.length === 0) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        for (const task of tasks) {
+            if (!task.dueDate || task.status === "completed") continue;
+
+            const due = new Date(task.dueDate + "T00:00:00");
+            due.setHours(0, 0, 0, 0);
+
+            let message = null;
+            let isOverdue = false;
+
+            if (due.getTime() < today.getTime()) {
+                message = `La tarea '${task.title}' venció`;
+                isOverdue = true;
+            } else if (due.getTime() === tomorrow.getTime()) {
+                message = `La tarea '${task.title}' vence mañana`;
+                isOverdue = false;
+            }
+
+            if (message && !shownNotifs.current.has(task.id + message)) {
+                shownNotifs.current.add(task.id + message);
+
+                setTimeout(() => {
+                    setDueDateNotif({ message, isOverdue });
+                    clearTimeout(dueDateNotifTimer.current);
+                    dueDateNotifTimer.current = setTimeout(() => {
+                        setDueDateNotif(null);
+                    }, 3000);
+                }, 500);
+
+                break;
+            }
+        }
+    }, [tasks]);
 
     // Reset view when switching workspaces
     useEffect(() => {
@@ -52,7 +100,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
             : null, [timerState.taskId, timerState.timers]);
 
     const isFocusMode = focusedTaskId !== null;
-    // Callback to update task dimensions from ResizeObserver
+
     const handleTaskResize = useCallback((taskId, dimensions) => {
         setTaskDimensions(prev => {
             const existing = prev[taskId];
@@ -63,11 +111,9 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
         });
     }, []);
 
-    // Helper to get task dimensions with fallback
     const getTaskDimensions = useCallback((taskId) => {
         return taskDimensions[taskId] || { width: DEFAULT_TASK_WIDTH, height: DEFAULT_TASK_HEIGHT };
     }, [taskDimensions]);
-
 
     function handleWheel(e) {
         if (isCreatingRef.current || isEditingRef.current) { e.stopPropagation(); return; }
@@ -226,6 +272,14 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
             onMouseUp={() => setIsPanning(false)}
             onMouseLeave={() => setIsPanning(false)}
         >
+            {/* Notificación de fecha vencida / próxima */}
+            {dueDateNotif && (
+                <div className={`${styles.dueDateNotif} ${dueDateNotif.isOverdue ? styles.dueDateNotifOverdue : ""}`}>
+                    <Bell size={15} className={styles.dueDateNotifIcon} />
+                    <span>{dueDateNotif.message}</span>
+                </div>
+            )}
+
             <div
                 className={styles.viewport}
                 style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: "0 0" }}
@@ -294,10 +348,8 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
                     onDelete={(taskId) => deleteTask(taskId)}
                     onComplete={(taskId) => completeTask(taskId)}
                     task={editingTask}
-
                 />
             )}
-
 
             {isFocusOverlayOpen && activeTask && (
                 <FocusOverlay

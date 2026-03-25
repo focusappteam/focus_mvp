@@ -15,14 +15,12 @@ import {
   Plus,
   Timer,
   Clock,
-  Pencil
+  Pencil,
+  Calendar
 } from "lucide-react";
 import { useTaskTimer } from "../../focusMode/hooks/useTaskTimer";
 import { useToast } from "../../../hooks/useToast";
 import Toast from "../../../components/UI/Toast";
-import Task from "./Task";
-
-
 
 const ACCENT_COLORS = [
   "#4a5e52",
@@ -31,8 +29,6 @@ const ACCENT_COLORS = [
   "#f472b6",
   "#34d399"
 ];
-
-// duration now comes from context
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   const [form, setForm] = useState({
@@ -43,8 +39,10 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     priority: "Medium",
     checklist: [],
     tags: [],
-    createdAt: ""
+    createdAt: "",
+    dueDate: ""
   });
+
   const {
     isRunning,
     isStopwatch,
@@ -57,6 +55,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     handleReset,
     handleToggleMode,
   } = useTaskTimer(task);
+
   const [newChecklistItem, setNewChecklistItem] = useState("");
   const [isAddingChecklist, setIsAddingChecklist] = useState(false);
   const [editingChecklistIndex, setEditingChecklistIndex] = useState(null);
@@ -86,12 +85,11 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   }
 
   function handleResetTimer() {
-    handleReset()
+    handleReset();
   }
 
   useEffect(() => {
     if (task) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         title: task.title || "",
         description: task.description || "",
@@ -100,7 +98,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
         priority: task.priority || "Medium",
         checklist: task.checklist || [],
         tags: task.tags || [],
-        createdAt: task.createdAt || new Date().toISOString()
+        createdAt: task.createdAt || new Date().toISOString(),
+        dueDate: task.dueDate || ""
       });
     }
   }, [task]);
@@ -174,10 +173,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     if (newTag.trim()) {
       const tagValue = newTag.trim().toUpperCase();
       if (!form.tags.includes(tagValue)) {
-        setForm(f => ({
-          ...f,
-          tags: [...f.tags, tagValue]
-        }));
+        setForm(f => ({ ...f, tags: [...f.tags, tagValue] }));
       } else {
         showToast("Esta Tag ya existe en esta tarea");
       }
@@ -211,7 +207,6 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   function commitTagEdit() {
     if (editingTagValue.trim() && editingTagIndex !== null) {
       const newValue = editingTagValue.trim().toUpperCase();
-      // Only update if not a duplicate (except for same index)
       const isDuplicate = form.tags.some((tag, i) => i !== editingTagIndex && tag === newValue);
       if (!isDuplicate) {
         const newTags = [...form.tags];
@@ -238,8 +233,6 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   }
 
   function handleClose() {
-    // Save changes before closing
-
     if (!form.title.trim()) {
       showToast("El título no puede estar vacío.");
       return;
@@ -252,7 +245,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
       priority: form.priority,
       checklist: form.checklist,
       tags: form.tags,
-      style: { color: form.color }
+      style: { color: form.color },
+      dueDate: form.dueDate || null
     };
     onSave(updatedTask);
     onClose();
@@ -260,16 +254,13 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
   function handleComplete() {
     handlePauseTimer();
-    if (onComplete) {
-      onComplete(task.id)
-    }
+    if (onComplete) onComplete(task.id);
     onClose();
   }
 
   function handleDelete() {
-    // clear any timer (especially if it's running for this task)
-    handleReset();  // el hook ya sabe si este task tiene timer
-    if (onDelete) { onDelete(task.id); }
+    handleReset();
+    if (onDelete) onDelete(task.id);
     onClose();
   }
 
@@ -282,11 +273,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   return (
     <div className={styles.overlay} onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        {/* Left Panel - Main Content */}
-        <div
-          inert={task.status === "completed"}
-          className={styles.mainContent}
-        >
+        {/* Left Panel */}
+        <div inert={task.status === "completed"} className={styles.mainContent}>
           <div className={styles.header}>
             <div className={styles.category}>
               <FolderOpen size={14} className={styles.categoryIcon} />
@@ -297,33 +285,61 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
             </button>
           </div>
 
-
-          <div >
-
-            <textarea required value={form.title}
+          <div>
+            <textarea
+              required
+              value={form.title}
               className={styles.titleTa}
-              name="title" id="title"
+              name="title"
+              id="title"
               onChange={(e) => setForm(f => ({ ...f, title: e.target.value.replace(/\n/g, "") }))}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   e.target.blur();
                 }
-              }} />
+              }}
+            />
           </div>
 
           <div className={styles.meta}>
             Created: {formatDate(form.createdAt)} •{" "}
-            <span className={styles[form.priority]}>
-              Priority: {form.priority}
-            </span>
+            <span className={styles[form.priority]}>Priority: {form.priority}</span>
+          </div>
+
+          {/* Due Date */}
+          <div className={styles.dueDateSection}>
+            <div className={styles.dueDateLabel}>
+              <Calendar size={13} className={styles.dueDateIcon} />
+              DUE DATE
+            </div>
+            <input
+              type="date"
+              className={styles.dueDateInput}
+              value={form.dueDate}
+              onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+              min={new Date().toISOString().split('T')[0]}
+            />
+            {form.dueDate && (
+              <button
+                className={styles.dueDateClear}
+                onClick={() => setForm(f => ({ ...f, dueDate: "" }))}
+              >
+                <X size={12} /> Quitar fecha
+              </button>
+            )}
           </div>
 
           <div className={styles.field}>
-            <textarea name="description" id="description" placeholder="  No description provided." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
-
-
+            <textarea
+              name="description"
+              id="description"
+              placeholder="  No description provided."
+              value={form.description}
+              onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
+            />
           </div>
+
           {/* Checklist Section */}
           <div className={styles.checklistSection}>
             <div className={styles.sectionHeader}>
@@ -337,12 +353,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   className={`${styles.checklistItem} ${item.checked ? styles.checked : ""}`}
                   onClick={() => handleChecklistToggle(index)}
                 >
-                  <div
-                    className={`${styles.checkbox} ${item.checked ? styles.checked : ""}`}
-                  >
-                    {item.checked && (
-                      <Check size={12} className={styles.checkmark} />
-                    )}
+                  <div className={`${styles.checkbox} ${item.checked ? styles.checked : ""}`}>
+                    {item.checked && <Check size={12} className={styles.checkmark} />}
                   </div>
                   {editingChecklistIndex === index ? (
                     <input
@@ -356,20 +368,12 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                       autoFocus
                     />
                   ) : (
-                    <span className={styles.checklistText}>
-                      {item.text}
-                    </span>
+                    <span className={styles.checklistText}>{item.text}</span>
                   )}
-                  <button
-                    className={styles.editChecklistItem}
-                    onClick={(e) => handleChecklistTextClick(index, e)}
-                  >
+                  <button className={styles.editChecklistItem} onClick={(e) => handleChecklistTextClick(index, e)}>
                     <Pencil size={14} />
                   </button>
-                  <button
-                    className={styles.removeChecklistItem}
-                    onClick={(e) => handleRemoveChecklistItem(index, e)}
-                  >
+                  <button className={styles.removeChecklistItem} onClick={(e) => handleRemoveChecklistItem(index, e)}>
                     <X size={14} />
                   </button>
                 </div>
@@ -390,13 +394,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   />
                 </div>
               ) : (
-                <div
-                  className={styles.addChecklistItem}
-                  onClick={() => setIsAddingChecklist(true)}
-                >
-                  <div className={styles.addIcon}>
-                    <Plus size={14} />
-                  </div>
+                <div className={styles.addChecklistItem} onClick={() => setIsAddingChecklist(true)}>
+                  <div className={styles.addIcon}><Plus size={14} /></div>
                   <span className={styles.addText}>Add checklist item</span>
                 </div>
               )}
@@ -418,16 +417,9 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   autoFocus
                 />
               ) : (
-                <span
-                  key={index}
-                  className={`${styles.tag}`}
-                  onDoubleClick={(e) => handleTagClick(index, e)}
-                >
+                <span key={index} className={`${styles.tag}`} onDoubleClick={(e) => handleTagClick(index, e)}>
                   #{tag}
-                  <button
-                    className={styles.removeTag}
-                    onClick={(e) => handleRemoveTag(index, e)}
-                  >
+                  <button className={styles.removeTag} onClick={(e) => handleRemoveTag(index, e)}>
                     <X size={12} />
                   </button>
                 </span>
@@ -446,10 +438,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                 autoFocus
               />
             ) : (
-              <button
-                className={styles.addTagButton}
-                onClick={() => setIsAddingTag(true)}
-              >
+              <button className={styles.addTagButton} onClick={() => setIsAddingTag(true)}>
                 <Plus size={12} /> Add Tag
               </button>
             )}
@@ -458,7 +447,6 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
 
         {/* Right Panel - Sidebar */}
         <div className={styles.sidebar}>
-          {/* Timer Section */}
           <div className={styles.timerSection}>
             <div className={styles.timerLabel}>
               <Brain size={14} className={styles.timerIcon} />
@@ -469,18 +457,12 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
               style={!isStopwatch ? { "--progress": `${timerProgress}%` } : {}}
             >
               <span className={styles.timerTime}>{formattedTime}</span>
-              <span className={styles.timerSubtext}>
-                {isStopwatch ? "STOPWATCH" : "FOCUS SESSION"}
-              </span>
+              <span className={styles.timerSubtext}>{isStopwatch ? "STOPWATCH" : "FOCUS SESSION"}</span>
             </div>
             <div className={styles.timerControls}>
               {isRunning ? (
-                <button
-                  className={styles.pauseButton}
-                  onClick={handlePauseTimer}
-                >
-                  <Pause size={12} className={styles.playIcon} />
-                  Pause
+                <button className={styles.pauseButton} onClick={handlePauseTimer}>
+                  <Pause size={12} className={styles.playIcon} /> Pause
                 </button>
               ) : (
                 <button
@@ -495,43 +477,32 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
               <button
                 className={styles.resetButton}
                 onClick={handleResetTimer}
-                disabled={
-                  (!canStart || task.status === "completed") ||
-                  task.status === "completed"
-                }
+                disabled={(!canStart || task.status === "completed") || task.status === "completed"}
               >
                 <RotateCcw size={16} />
               </button>
             </div>
-            {/* Mode Toggle */}
-            <div
-              className={`${styles.modeToggleContainer} ${isRunning || task.status === "completed" ? styles.disabled : ""}`}
-            >
+            <div className={`${styles.modeToggleContainer} ${isRunning || task.status === "completed" ? styles.disabled : ""}`}>
               <button
                 className={`${styles.modeOption} ${!isStopwatch ? styles.active : ""}`}
                 onClick={() => (!isStopwatch ? null : handleToggleMode())}
                 disabled={isRunning || task.status === "completed"}
               >
-                <Timer size={14} />
-                Countdown
+                <Timer size={14} /> Countdown
               </button>
               <button
                 className={`${styles.modeOption} ${isStopwatch ? styles.active : ""}`}
                 onClick={() => (isStopwatch ? null : handleToggleMode())}
                 disabled={isRunning || task.status === "completed"}
               >
-                <Clock size={14} />
-                Stopwatch
+                <Clock size={14} /> Stopwatch
               </button>
             </div>
             {!canStart && !isRunning && (
-              <div className={styles.timerWarning}>
-                Timer active on another task
-              </div>
+              <div className={styles.timerWarning}>Timer active on another task</div>
             )}
           </div>
 
-          {/* Card Accent Section */}
           <div className={styles.accentSection}>
             <div className={styles.accentLabel}>
               <Palette size={14} className={styles.accentIcon} />
@@ -549,12 +520,8 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
             </div>
           </div>
 
-          {/* Actions Section */}
           <div className={styles.actionsSection}>
-            <button
-              className={styles.completeButton}
-              onClick={handleComplete}
-            >
+            <button className={styles.completeButton} onClick={handleComplete}>
               Mark as Complete
               <CheckCheck size={18} className={styles.completeIcon} />
             </button>
@@ -566,7 +533,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
         </div>
       </div>
       <Toast message={toast} visible={toastVisible} />
-    </div >
+    </div>
   );
 }
 
