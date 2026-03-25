@@ -2,8 +2,8 @@ import { supabase } from '../utils/supabase'
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from "react";
 
+import { useAuth } from './AuthContext';
 const BoardContext = createContext(null);
-
 // Convierte una fila de Supabase al shape que usa la app
 function mapTaskFromDB(row) {
     return {
@@ -24,6 +24,20 @@ function mapTaskFromDB(row) {
 }
 
 export function BoardProvider({ children }) {
+    const { user, loading: authLoading } = useAuth();
+    // Limpiar localStorage cuando no hay usuario (logout o cambio de cuenta)
+    // Esto evita que datos de un usuario aparezcan en otro
+    useEffect(() => {
+        if (!authLoading && !user) {
+            setWorkspaces([]);
+            setActiveWorkspaceId(null);
+            setAllTasks([]);
+            localStorage.removeItem("workspaces");
+            localStorage.removeItem("activeWorkspaceId");
+            localStorage.removeItem("tasks");
+            syncedWorkspacesRef.current.clear();
+        }
+    }, [user, authLoading]);
     // --- Workspaces ---
     const [workspaces, setWorkspaces] = useState(() => {
         const saved = localStorage.getItem("workspaces");
@@ -71,10 +85,12 @@ export function BoardProvider({ children }) {
 
     // --- Sync inicial: carga workspaces desde Supabase ---
     useEffect(() => {
+        if (authLoading || !user) return;
         async function loadWorkspaces() {
             const { data, error } = await supabase
                 .from("workspaces")
                 .select("id, name, sort_order")
+                .eq("user_id", user.id)
                 .order("sort_order", { ascending: true });
 
             if (error) {
@@ -82,9 +98,7 @@ export function BoardProvider({ children }) {
                 return;
             }
 
-            if (!data || data.length === 0) return;
-
-            const mapped = data.map(ws => ({ id: ws.id, name: ws.name }));
+            const mapped = (data ?? []).map(ws => ({ id: ws.id, name: ws.name }));
             persistWorkspaces(mapped);
 
             // Si el activeWorkspaceId guardado en localStorage ya no existe en Supabase,
@@ -93,17 +107,19 @@ export function BoardProvider({ children }) {
             if (!stillExists) {
                 persistActiveWorkspace(mapped[0]?.id ?? null);
             }
+
+            // Si no hay workspaces, evitar tasks huérfanas en estado/localStorage
+            if (mapped.length === 0) {
+                persistTasks([]);
+            }
         }
 
         loadWorkspaces();
-        // Solo al montar
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user, authLoading, activeWorkspaceId]);
 
 
     useEffect(() => {
         if (!activeWorkspaceId) return;
-
         // Si ya lo sincronizamos con Supabase en esta sesión, no consultamos de nuevo.
         // Los cambios dentro de la sesión ya los manejan addTask/updateTask/deleteTask.
         if (syncedWorkspacesRef.current.has(activeWorkspaceId)) return;
@@ -138,6 +154,10 @@ export function BoardProvider({ children }) {
         }
 
         loadTasks();
+        return () => {
+            // Permite que StrictMode vuelva a cargar correctamente en dev
+            syncedWorkspacesRef.current.delete(activeWorkspaceId);
+        };
     }, [activeWorkspaceId]);
 
     // --- Realtime: workspaces ---
@@ -245,6 +265,7 @@ export function BoardProvider({ children }) {
     const createWorkspace = useCallback(async (name) => {
         const trimmed = name.trim();
         if (!trimmed) return null;
+        if (!user?.id) return null;
 
         let newWs = { id: `ws-${Date.now()}`, name: trimmed };
 
@@ -254,6 +275,7 @@ export function BoardProvider({ children }) {
                 .insert({
                     name: trimmed,
                     sort_order: workspaces.length,
+                    user_id: user.id,
                 })
                 .select("id, name")
                 .single();
@@ -270,11 +292,12 @@ export function BoardProvider({ children }) {
         const updated = [...workspaces, newWs];
         persistWorkspaces(updated);
         return newWs;
-    }, [workspaces]);
+    }, [workspaces, user]);
 
     const renameWorkspace = useCallback((id, name) => {
         const trimmed = name.trim();
         if (!trimmed) return;
+        if (!user?.id) return;
 
         const currentWorkspace = workspaces.find(ws => ws.id === id);
         if (!currentWorkspace) return;
@@ -292,9 +315,10 @@ export function BoardProvider({ children }) {
                 console.error("Failed to rename workspace in Supabase:", error);
             }
         })();
-    }, [workspaces]);
+    }, [workspaces, user]);
 
     const deleteWorkspace = useCallback((id) => {
+        if (!user?.id) return;
         const workspaceExists = workspaces.some(ws => ws.id === id);
         if (!workspaceExists) return;
 
@@ -318,9 +342,10 @@ export function BoardProvider({ children }) {
                 console.error("Failed to delete workspace in Supabase:", error);
             }
         })();
-    }, [workspaces, allTasks, activeWorkspaceId]);
+    }, [workspaces, allTasks, activeWorkspaceId, user]);
 
     const reorderWorkspaces = useCallback((reordered) => {
+        if (!user?.id) return;
         persistWorkspaces(reordered);
 
         void (async () => {
@@ -329,7 +354,7 @@ export function BoardProvider({ children }) {
             );
             await Promise.all(updates);
         })();
-    }, []);
+    }, [user]);
 
 
     const selectWorkspace = useCallback((id) => {
@@ -338,6 +363,7 @@ export function BoardProvider({ children }) {
 
     // --- Task actions ---
     const addTask = useCallback((task) => {
+        if (!user?.id) return;
         const taskWithWorkspace = { ...task, workspaceId: activeWorkspaceId };
         persistTasks([...allTasks, taskWithWorkspace]);
 
@@ -345,6 +371,7 @@ export function BoardProvider({ children }) {
 
         const payload = {
             id: taskWithWorkspace.id,
+            user_id: user.id,
             workspace_id: taskWithWorkspace.workspaceId,
             title: taskWithWorkspace.title ?? "",
             description: taskWithWorkspace.description ?? "",
@@ -370,9 +397,10 @@ export function BoardProvider({ children }) {
                 console.error("Failed to create task in Supabase:", error);
             }
         })();
-    }, [allTasks, activeWorkspaceId]);
+    }, [allTasks, activeWorkspaceId, user]);
 
     const updateTask = useCallback((updatedTask) => {
+        if (!user?.id) return;
         persistTasks(allTasks.map(t => t.id === updatedTask.id ? updatedTask : t));
 
         if (!updatedTask?.id) return;
@@ -403,9 +431,10 @@ export function BoardProvider({ children }) {
                 console.error("Failed to update task in Supabase:", error);
             }
         })();
-    }, [allTasks, activeWorkspaceId]);
+    }, [allTasks, activeWorkspaceId, user]);
 
     const deleteTask = useCallback((taskId) => {
+        if (!user?.id) return;
         const taskExists = allTasks.some(t => t.id === taskId);
         if (!taskExists) return;
 
@@ -421,9 +450,10 @@ export function BoardProvider({ children }) {
                 console.error("Failed to delete task in Supabase:", error);
             }
         })();
-    }, [allTasks]);
+    }, [allTasks, user]);
 
     const completeTask = useCallback((taskId) => {
+        if (!user?.id) return;
         const currentTask = allTasks.find(t => t.id === taskId);
         if (!currentTask || currentTask.status === "completed") return;
 
@@ -453,7 +483,7 @@ export function BoardProvider({ children }) {
                 console.error("Failed to complete task in Supabase:", error);
             }
         })();
-    }, [allTasks]);
+    }, [allTasks, user]);
 
     // --- Value ---
     const value = useMemo(() => ({

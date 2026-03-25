@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import StatsOverlay from "../../features/board/components/StatsOverlay";
 import styles from "./layout.module.css";
-import { LayoutGrid, Plus, GripVertical } from "lucide-react";
+import { LayoutGrid, Plus, GripVertical, BarChart2 } from "lucide-react";
 import { useBoard } from "../../contexts/BoardContext";
 import {
     DndContext,
@@ -87,9 +87,7 @@ function SortableWorkspaceItem({ ws, isActive, isRenaming, onContextMenu, onRena
             <span className={styles.dragHandle} {...attributes} {...listeners}>
                 <GripVertical size={13} />
             </span>
-
             <span className={styles.navIcon}><LayoutGrid size={14} /></span>
-
             {isRenaming ? (
                 <input
                     ref={inputRef}
@@ -118,6 +116,7 @@ function Sidebar({ blocked = false }) {
         reorderWorkspaces,
         selectWorkspace,
     } = useBoard();
+
     const [showStats, setShowStats] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState("");
@@ -132,9 +131,7 @@ function Sidebar({ blocked = false }) {
         const trimmed = newName.trim();
         if (!trimmed) { setIsCreating(false); return; }
         const newWs = await createWorkspace(trimmed);
-        if (newWs?.id) {
-            selectWorkspace(newWs.id);
-        }
+        if (newWs?.id) selectWorkspace(newWs.id);
         setNewName("");
         setIsCreating(false);
     }
@@ -167,7 +164,7 @@ function Sidebar({ blocked = false }) {
     }
 
     return (
-      <aside className={styles.sidebar}>
+        <aside className={styles.sidebar}>
             {blocked && (
                 <div
                     className={styles.sidebarBlockedOverlay}
@@ -202,49 +199,45 @@ function Sidebar({ blocked = false }) {
           </SortableContext>
         </DndContext>
 
-        {isCreating ? (
-          <div className={styles.createInputWrapper}>
-            <input
-              autoFocus
-              className={styles.createInput}
-              placeholder="Nombre del workspace..."
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={handleCreateKeyDown}
-              onBlur={handleCreate}
-            />
-          </div>
-        ) : (
-          <button
-            className={styles.createButton}
-            onClick={() => setIsCreating(true)}
-          >
-            <Plus size={14} />
-            Crear nuevo
-          </button>
-        )}
+            {isCreating ? (
+                <div className={styles.createInputWrapper}>
+                    <input
+                        id="nombrewks"
+                        autoFocus
+                        className={styles.createInput}
+                        placeholder="Nombre del workspace..."
+                        value={newName}
+                        onChange={e => setNewName(e.target.value)}
+                        onKeyDown={handleCreateKeyDown}
+                        onBlur={handleCreate}
+                    />
+                </div>
+            ) : (
+                <button className={styles.createButton} onClick={() => setIsCreating(true)}>
+                    <Plus size={14} />
+                    Crear nuevo
+                </button>
+            )}
 
-        {contextMenu && (
-          <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onRename={() => {
-              setRenamingId(contextMenu.wsId);
-              setContextMenu(null);
-            }}
-            onDelete={() => handleDelete(contextMenu.wsId)}
-            onClose={() => setContextMenu(null)}
-          />
-        )}
-        <button
-          className={styles.statsButton}
-          onClick={() => setShowStats(true)}
-        >
-          Statistics
-        </button>
+            {contextMenu && (
+                <ContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onRename={() => {
+                        setRenamingId(contextMenu.wsId);
+                        setContextMenu(null);
+                    }}
+                    onDelete={() => handleDelete(contextMenu.wsId)}
+                    onClose={() => setContextMenu(null)}
+                />
+            )}
 
-        {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
-      </aside>
+            <button className={styles.statsButton} onClick={() => setShowStats(true)}>
+                <BarChart2 size={14} /> Statistics
+            </button>
+
+            {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
+        </aside>
     );
 }
 

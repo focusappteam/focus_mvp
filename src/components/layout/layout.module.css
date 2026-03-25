@@ -421,3 +421,40 @@
     background: #4c6f70;
     color: #fff;
 }
+
+/* ── User section en el Header ─────────────────────────────────── */
+.userSection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* empuja el bloque hacia la derecha */
+}
+
+.userName {
+    font-size: 12px;
+    color: #888;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* si el email es largo, no rompe el layout */
+}
+
+.logoutButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #888;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.logoutButton:hover {
+    color: #f87171;
+    /* rojo suave al hacer hover */
+    border-color: #f87171;
+}
