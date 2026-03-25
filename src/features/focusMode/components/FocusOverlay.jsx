@@ -3,6 +3,21 @@ import { X, Coffee, CheckCircle, Check } from "lucide-react";
 import styles from "../focus-mode.module.css";
 import { useFocusMode } from "../hooks/useFocusMode";
 
+const requestFullscreen = (elem) => {
+  if (elem.requestFullscreen) return elem.requestFullscreen();
+  if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
+  if (elem.mozRequestFullScreen) return elem.mozRequestFullScreen();
+  if (elem.msRequestFullscreen) return elem.msRequestFullscreen();
+  throw new Error('Fullscreen no soportado');
+};
+
+const exitFullscreen = () => {
+  if (document.exitFullscreen) return document.exitFullscreen();
+  if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+  if (document.mozCancelFullScreen) return document.mozCancelFullScreen();
+  if (document.msExitFullscreen) return document.msExitFullscreen();
+};
+
 
 const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
   const {
@@ -17,7 +32,40 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
 
   const [checklist, setChecklist] = useState(activeTask?.checklist ?? []);
 
-  const handleExit = useCallback(() => onExit(), [onExit]);
+  const handleExit = useCallback(() => {
+    exitFullscreen().catch(() => { });
+    onExit()
+  }, [onExit]);
+
+  useEffect(() => {
+    const el = document.documentElement;
+    const enterFullscreen = async () => {
+      try {
+        await requestFullscreen(el);
+        console.log('Entró fullscreen focus');
+      } catch (err) {
+        console.warn('Fullscreen denegado:', err);
+      }
+    };
+
+    enterFullscreen();
+
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        handleExit();
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (document.fullscreenElement) {
+        exitFullscreen().catch(() => { });
+      }
+    };
+  }, []);
 
   // Cerrar con ESC
   useEffect(() => {
@@ -42,6 +90,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
 
   const handleComplete = () => {
     handlePauseResume();
+    exitFullscreen().catch(() => { });
     onCompleteTask(activeTask.id);
     onExit();
   };
