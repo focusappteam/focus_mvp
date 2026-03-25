@@ -325,7 +325,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                 className={styles.dueDateClear}
                 onClick={() => setForm(f => ({ ...f, dueDate: "" }))}
               >
-                <X size={12} /> Quitar fecha
+                <X size={12} /> Clear date
               </button>
             )}
           </div>
