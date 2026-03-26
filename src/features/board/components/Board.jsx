@@ -268,8 +268,8 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
 
             <div className={styles.hint}>
                 {activeWorkspaceId
-                    ? "Haga doble clic en cualquier lugar para crear una nueva tarea"
-                    : "Selecciona o crea un workspace para empezar"}
+                    ? "Haz doble clic en cualquier lugar para crear una nueva tarea"
+                    : "Selecciona o crea un espacio de trabajo para empezar"}
             </div>
             <Toast message={toast} visible={toastVisible} />
 

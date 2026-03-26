@@ -8,6 +8,7 @@ GripVertical
 function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused, onResize }) {
     const { id, title, tags, priority = "Medium", checklist = [] } = task;
     const { x = 0, y = 0 } = task.position || {};
+  const priorityLabel = priority === "High" ? "Alta" : priority === "Low" ? "Baja" : "Media";
 
     // Progress calculation
     const completedSubtasks = checklist.filter(s => s.checked).length;
@@ -74,7 +75,7 @@ function Task({ task, onDoubleClick, zoom, onHoverChange, isBlocked, isFocused, 
         >
           <div className={styles.upperSection}>
             <div className={`${styles.priority} ${styles[priority]}`}>
-              <p>{priority}</p>
+              <p>{priorityLabel}</p>
             </div>
             <div>
               <GripVertical className={styles.icon} size={20} />

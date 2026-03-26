@@ -41,21 +41,21 @@ export default function Login() {
           <span className={styles.navLogoPrimary}>FOCUS</span>
           <span className={styles.navLogoSecondary}>.app</span>
         </span>
-        <span className={styles.navRight}>THE INFINITE STUDIO</span>
+        <span className={styles.navRight}>EL ESTUDIO INFINITO</span>
       </nav>
 
       <div className={styles.container}>
         <div className={styles.card}>
           <div className={styles.cardHeader}>
-            <h1 className={styles.cardTitle}>Welcome Back</h1>
-            <p className={styles.cardSubtitle}>Continue your focus journey</p>
+            <h1 className={styles.cardTitle}>Bienvenido de nuevo</h1>
+            <p className={styles.cardSubtitle}>Continua tu viaje de enfoque</p>
           </div>
 
           {error && <p className={styles.errorMsg}>{error}</p>}
 
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>EMAIL ADDRESS</label>
+              <label className={styles.label}>CORREO ELECTRONICO</label>
               <div className={styles.inputWrapper}>
                 <Mail size={15} className={styles.inputIcon} />
                 <input
@@ -71,8 +71,8 @@ export default function Login() {
 
             <div className={styles.fieldGroup}>
               <div className={styles.labelRow}>
-                <label className={styles.label}>PASSWORD</label>
-                <Link to="/forgot-password" className={styles.forgot}>FORGOT?</Link>
+                <label className={styles.label}>CONTRASEÑA</label>
+                <Link to="/forgot-password" className={styles.forgot}>Olvidaste tu contraseña?</Link>
               </div>
               <div className={styles.inputWrapper}>
                 <Lock size={15} className={styles.inputIcon} />
@@ -88,13 +88,13 @@ export default function Login() {
             </div>
 
             <button className={styles.btnPrimary} type="submit" disabled={loading}>
-              {loading ? "Signing in..." : "Login"}
+              {loading ? "Iniciando sesion..." : "Iniciar sesion"}
               {!loading && <ArrowRight size={16} />}
             </button>
           </form>
 
           <div className={styles.divider}>
-            <span className={styles.dividerText}>OR CONNECT VIA</span>
+            <span className={styles.dividerText}>O CONECTA CON</span>
           </div>
 
           <div className={styles.socialRow}>
@@ -116,8 +116,8 @@ export default function Login() {
           </div>
 
           <p className={styles.switchText}>
-            New to the studio?{" "}
-            <Link to="/register" className={styles.switchLink}>Create an account</Link>
+            Eres nuevo en el estudio?{" "}
+            <Link to="/register" className={styles.switchLink}>Crear una cuenta</Link>
           </p>
         </div>
 
@@ -125,11 +125,11 @@ export default function Login() {
       </div>
 
       <footer className={styles.footer}>
-        <span>© 2026 FOCUS.APP. ALL RIGHTS RESERVED.</span>
+        <span>© 2026 FOCUS.APP. TODOS LOS DERECHOS RESERVADOS.</span>
         <div className={styles.footerLinks}>
-          <a href="#">PRIVACY POLICY</a>
-          <a href="#">TERMS OF SERVICE</a>
-          <a href="#">CONTACT</a>
+          <a href="#">POLITICA DE PRIVACIDAD</a>
+          <a href="#">TERMINOS DEL SERVICIO</a>
+          <a href="#">CONTACTO</a>
         </div>
       </footer>
     </div>

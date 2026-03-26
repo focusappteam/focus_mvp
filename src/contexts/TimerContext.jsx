@@ -105,7 +105,7 @@ export function TimerProvider({ children }) {
               delete listenersRef.current.__title[id];
             }
             if (Notification.permission === "granted") {
-              new Notification("Focus Session Complete!", { body: title || "" });
+              new Notification("Sesion de enfoque completada!", { body: title || "" });
             }
             return {
               taskId: null,

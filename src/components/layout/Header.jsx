@@ -62,7 +62,7 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
                 {isRunning && (
                     <>
                         <div className={styles.timerBadge}>{formattedTime}</div>
-                        <div className={styles.focusBadge}>{isStopwatch ? 'STOPWATCH' : 'CountDown'}</div>
+                        <div className={styles.focusBadge}>{isStopwatch ? 'CRONOMETRO' : 'Countdown'}</div>
                         {activeTask && (
                             <FocusButton
                                 activeTask={activeTask}

@@ -457,11 +457,12 @@ export function BoardProvider({ children }) {
         const currentTask = allTasks.find(t => t.id === taskId);
         if (!currentTask || currentTask.status === "completed") return;
 
-        const nextTags = Array.isArray(currentTask.tags)
-            ? currentTask.tags.includes("COMPLETED")
-                ? currentTask.tags
-                : [...currentTask.tags, "COMPLETED"]
-            : ["COMPLETED"];
+        const normalizedTags = Array.isArray(currentTask.tags)
+            ? currentTask.tags.map(tag => tag === "COMPLETED" ? "COMPLETADA" : tag)
+            : [];
+        const nextTags = normalizedTags.includes("COMPLETADA")
+            ? normalizedTags
+            : [...normalizedTags, "COMPLETADA"];
 
         persistTasks(allTasks.map(t =>
             t.id === taskId

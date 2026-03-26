@@ -233,7 +233,7 @@ function Sidebar({ blocked = false }) {
             )}
 
             <button className={styles.statsButton} onClick={() => setShowStats(true)}>
-                <BarChart2 size={14} /> Statistics
+                <BarChart2 size={14} /> Estadisticas
             </button>
 
             {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
