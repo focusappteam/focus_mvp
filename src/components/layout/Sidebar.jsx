@@ -17,7 +17,7 @@ import {
     arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useOnboardingRef } from "../../hooks/useOnboarding";
+import { useOnboardingRef } from "../../hooks/useOnboarding.js";
 
 // ---------- Context Menu ----------
 function ContextMenu({ x, y, onRename, onDelete, onClose }) {
