@@ -61,7 +61,7 @@ function Header({ onEnterFocus, onToggleSidebar, sidebarOpen }) {
                 {isRunning && (
                     <>
                         <div className={styles.timerBadge}>{formattedTime}</div>
-                        <div className={styles.focusBadge}>{isStopwatch ? "STOPWATCH" : "CountDown"}</div>
+                        <div className={styles.focusBadge}>{isStopwatch ? 'CRONOMETRO' : 'TEMPORIZADOR'}</div>
                         {activeTask && (
                             /*
                                 El callback ref va en el span wrapper porque FocusButton

@@ -15,7 +15,7 @@ const FocusButton = ({ onEnterFocus }) => {
       onClick={() => isFocusActive && onEnterFocus()}
       disabled={!isFocusActive}
     >
-      <Timer size={14} /> FOCUS MODE
+      <Timer size={14} /> MODO FOCUS
     </button>
   );
 };
