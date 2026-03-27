@@ -19,6 +19,7 @@ import {
     arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useOnboardingRef } from "../../hooks/useOnboarding.js";
 
 // ---------- Context Menu ----------
 function ContextMenu({ x, y, onRename, onDelete, onClose }) {
@@ -45,7 +46,10 @@ function ContextMenu({ x, y, onRename, onDelete, onClose }) {
                 Renombrar
             </button>
             <div className={styles.contextMenuDivider} />
-            <button className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`} onClick={onDelete}>
+            <button
+                className={`${styles.contextMenuItem} ${styles.contextMenuItemDanger}`}
+                onClick={onDelete}
+            >
                 Eliminar
             </button>
         </div>
@@ -53,8 +57,12 @@ function ContextMenu({ x, y, onRename, onDelete, onClose }) {
 }
 
 // ---------- Sortable Item ----------
-function SortableWorkspaceItem({ ws, isActive, isRenaming, onContextMenu, onRenameSubmit, onRenameCancel, onSelect }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: ws.id });
+function SortableWorkspaceItem({
+    ws, isActive, isRenaming,
+    onContextMenu, onRenameSubmit, onRenameCancel, onSelect,
+}) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+        useSortable({ id: ws.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -95,10 +103,10 @@ function SortableWorkspaceItem({ ws, isActive, isRenaming, onContextMenu, onRena
                     ref={inputRef}
                     className={styles.renameInput}
                     value={renameValue}
-                    onChange={e => setRenameValue(e.target.value)}
+                    onChange={(e) => setRenameValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={() => onRenameSubmit(renameValue)}
-                    onClick={e => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 />
             ) : (
                 <span className={styles.navLabel}>{ws.name}</span>
@@ -110,13 +118,9 @@ function SortableWorkspaceItem({ ws, isActive, isRenaming, onContextMenu, onRena
 // ---------- Sidebar ----------
 function Sidebar({ blocked = false }) {
     const {
-        workspaces,
-        activeWorkspaceId,
-        createWorkspace,
-        renameWorkspace,
-        deleteWorkspace,
-        reorderWorkspaces,
-        selectWorkspace,
+        workspaces, activeWorkspaceId,
+        createWorkspace, renameWorkspace, deleteWorkspace,
+        reorderWorkspaces, selectWorkspace,
     } = useBoard();
 
     const [showStats, setShowStats] = useState(false);
@@ -125,6 +129,10 @@ function Sidebar({ blocked = false }) {
     const [contextMenu, setContextMenu] = useState(null);
     const [renamingId, setRenamingId] = useState(null);
     const { toast, toastVisible, showToast } = useToast();
+
+    // Callback refs para onboarding — se llaman por React en mount/unmount exacto
+    const createWsRef = useOnboardingRef("create-workspace-btn");
+    const statsRef = useOnboardingRef("stats-btn");
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -224,15 +232,20 @@ function Sidebar({ blocked = false }) {
                         className={styles.createInput}
                         placeholder="Nombre del workspace..."
                         value={newName}
-                        onChange={e => setNewName(e.target.value)}
+                        onChange={(e) => setNewName(e.target.value)}
                         onKeyDown={handleCreateKeyDown}
                         onBlur={handleCreate}
                     />
                 </div>
             ) : (
-                <button 
-                    className={styles.createButton} 
+                // Callback ref: React lo llama con el nodo exactamente en mount/unmount
+                <button
+                    ref={createWsRef}
+                    
+                    className={styles.createButton}
+                    
                     onClick={() => setIsCreating(true)}
+                
                 >
                     <Plus size={14} />
                     Crear nuevo
@@ -243,16 +256,17 @@ function Sidebar({ blocked = false }) {
                 <ContextMenu
                     x={contextMenu.x}
                     y={contextMenu.y}
-                    onRename={() => {
-                        setRenamingId(contextMenu.wsId);
-                        setContextMenu(null);
-                    }}
+                    onRename={() => { setRenamingId(contextMenu.wsId); setContextMenu(null); }}
                     onDelete={() => handleDelete(contextMenu.wsId)}
                     onClose={() => setContextMenu(null)}
                 />
             )}
 
-            <button className={styles.statsButton} onClick={() => setShowStats(true)}>
+            <button
+                ref={statsRef}
+                className={styles.statsButton}
+                onClick={() => setShowStats(true)}
+            >
                 <BarChart2 size={14} /> Statistics
             </button>
 

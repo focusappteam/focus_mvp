@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
@@ -9,7 +9,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 	<React.StrictMode>
 		<BrowserRouter>
 			<AuthProvider>
-				<App />
+				{/*
+					OnboardingProvider vive aquí — fuera de BoardProvider/TimerProvider
+					para no depender de ellos, pero dentro de AuthProvider por si
+					en el futuro se necesita leer el userId.
+				*/}
+					<App />
 			</AuthProvider>
 		</BrowserRouter>
 	</React.StrictMode>

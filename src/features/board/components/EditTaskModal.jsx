@@ -20,7 +20,7 @@ import {
 import { useTaskTimer } from "../../focusMode/hooks/useTaskTimer";
 import { useToast } from "../../../hooks/useToast";
 import Toast from "../../../components/UI/Toast";
-import Task from "./Task";
+import { useOnboarding } from "../../../hooks/useOnboarding";
 
 
 
@@ -31,8 +31,6 @@ const ACCENT_COLORS = [
   "#f472b6",
   "#34d399"
 ];
-
-// duration now comes from context
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   const [form, setForm] = useState({
@@ -66,6 +64,15 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   const { toast, toastVisible, showToast } = useToast();
   const [editingTagIndex, setEditingTagIndex] = useState(null);
   const [editingTagValue, setEditingTagValue] = useState("");
+  const { setIsEditingTaskOpen } = useOnboarding();
+
+  useEffect(() => {
+    setIsEditingTaskOpen(true);
+
+    return () => {
+      setIsEditingTaskOpen(false);
+    };
+  }, [setIsEditingTaskOpen]);
 
   useEffect(() => {
     if (Notification.permission === "default") {
