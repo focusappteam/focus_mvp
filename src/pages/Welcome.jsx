@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle, ArrowRight } from "lucide-react";
 import styles from "./auth.module.css";
 
-export default function WelcomeStudio() {
+export default function Welcome() {
   const navigate = useNavigate();
 
   return (
@@ -27,7 +27,6 @@ export default function WelcomeStudio() {
           </button>
 
           <p className={styles.settingUpText}>CONFIGURANDO TU ESPACIO DE TRABAJO...</p>
-
           <div className={styles.dotsRow}>
             <span className={styles.dotActive} />
             <span className={styles.dot} />

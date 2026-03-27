@@ -48,7 +48,7 @@ export default function Register() {
     // Si tienes "Confirm email" activo, avisamos al usuario.
     setSuccess("¡Cuenta creada! Revisa tu correo para confirmarla.");
     setLoading(false);
-    setTimeout(() => navigate("/check-email", { replace: true }), 3000);
+    setTimeout(() => navigate("/check-email", { replace: true }), 5000);
   }
 
   return (

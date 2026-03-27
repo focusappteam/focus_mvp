@@ -10,6 +10,8 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext";
 import OnboardingOverlay from "./components/onboarding/OnboardingOverlay";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import Welcome from "./pages/Welcome";
+import CheckEmail from "./pages/CheckEmail";
 
 function AppContent() {
   const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState(false);
@@ -51,6 +53,8 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+      <Route path="/welcome" element={<PublicRoute><Welcome /></PublicRoute>} />
+      <Route path="/checkemail" element={<PublicRoute><CheckEmail /></PublicRoute>} />
       <Route element={<ProtectedRoute />}>
         <Route path="/app" element={<AppContent />} />
       </Route>
