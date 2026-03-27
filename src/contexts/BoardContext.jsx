@@ -267,6 +267,19 @@ export function BoardProvider({ children }) {
         if (!trimmed) return null;
         if (!user?.id) return null;
 
+        // Feature: limit to 5 workspaces
+        if (workspaces.length >= 5) {
+            return { error: 'limit' };
+        }
+
+        // Feature: no duplicate workspace names (case-insensitive)
+        const isDuplicate = workspaces.some(
+            ws => ws.name.trim().toLowerCase() === trimmed.toLowerCase()
+        );
+        if (isDuplicate) {
+            return { error: 'duplicate' };
+        }
+
         let newWs = { id: `ws-${Date.now()}`, name: trimmed };
 
         try {

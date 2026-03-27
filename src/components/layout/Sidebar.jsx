@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import StatsOverlay from "../../features/board/components/StatsOverlay";
 import styles from "./layout.module.css";
+import { useToast } from "../../hooks/useToast";
+import Toast from "../../components/UI/Toast";
 import { LayoutGrid, Plus, GripVertical, BarChart2 } from "lucide-react";
 import { useBoard } from "../../contexts/BoardContext";
 import {
@@ -122,6 +124,7 @@ function Sidebar({ blocked = false }) {
     const [newName, setNewName] = useState("");
     const [contextMenu, setContextMenu] = useState(null);
     const [renamingId, setRenamingId] = useState(null);
+    const { toast, toastVisible, showToast } = useToast();
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -131,7 +134,21 @@ function Sidebar({ blocked = false }) {
         const trimmed = newName.trim();
         if (!trimmed) { setIsCreating(false); return; }
         const newWs = await createWorkspace(trimmed);
-        if (newWs?.id) selectWorkspace(newWs.id);
+        if (newWs?.error === 'limit') {
+            showToast("Máximo 5 workspaces permitidos");
+            setIsCreating(false);
+            setNewName("");
+            return;
+        }
+        if (newWs?.error === 'duplicate') {
+            showToast("Ya existe un workspace con ese nombre");
+            setIsCreating(false);
+            setNewName("");
+            return;
+        }
+        if (newWs?.id) {
+            selectWorkspace(newWs.id);
+        }
         setNewName("");
         setIsCreating(false);
     }
@@ -164,40 +181,40 @@ function Sidebar({ blocked = false }) {
     }
 
     return (
-        <aside className={styles.sidebar}>
+          <aside className={styles.sidebar}>
             {blocked && (
                 <div
                     className={styles.sidebarBlockedOverlay}
                     title="No puedes cambiar de workspace durante una sesión activa"
                 />
             )}
-        <p className={styles.sidebarTitle}>Workspaces</p>
+            <p className={styles.sidebarTitle}>Workspaces</p>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={workspaces.map((ws) => ws.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <ul className={styles.navList}>
-              {workspaces.map((ws) => (
-                <SortableWorkspaceItem
-                  key={ws.id}
-                  ws={ws}
-                  isActive={ws.id === activeWorkspaceId}
-                  isRenaming={renamingId === ws.id}
-                  onContextMenu={handleContextMenu}
-                  onRenameSubmit={handleRenameSubmit}
-                  onRenameCancel={() => setRenamingId(null)}
-                  onSelect={selectWorkspace}
-                />
-              ))}
-            </ul>
-          </SortableContext>
-        </DndContext>
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext
+                    items={workspaces.map((ws) => ws.id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    <ul className={styles.navList}>
+                        {workspaces.map((ws) => (
+                            <SortableWorkspaceItem
+                                key={ws.id}
+                                ws={ws}
+                                isActive={ws.id === activeWorkspaceId}
+                                isRenaming={renamingId === ws.id}
+                                onContextMenu={handleContextMenu}
+                                onRenameSubmit={handleRenameSubmit}
+                                onRenameCancel={() => setRenamingId(null)}
+                                onSelect={selectWorkspace}
+                            />
+                        ))}
+                    </ul>
+                </SortableContext>
+            </DndContext>
 
             {isCreating ? (
                 <div className={styles.createInputWrapper}>
@@ -213,7 +230,10 @@ function Sidebar({ blocked = false }) {
                     />
                 </div>
             ) : (
-                <button className={styles.createButton} onClick={() => setIsCreating(true)}>
+                <button 
+                    className={styles.createButton} 
+                    onClick={() => setIsCreating(true)}
+                >
                     <Plus size={14} />
                     Crear nuevo
                 </button>
@@ -236,7 +256,8 @@ function Sidebar({ blocked = false }) {
                 <BarChart2 size={14} /> Statistics
             </button>
 
-            {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
+                {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
+              <Toast message={toast} visible={toastVisible} />
         </aside>
     );
 }
