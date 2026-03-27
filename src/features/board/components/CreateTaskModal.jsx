@@ -51,6 +51,11 @@ function CreateTaskModal({ onClose, onCreate, position }) {
         color: "",
         priority: "Medium"
     });
+    const priorityOptions = [
+        { value: "Low", label: "Baja" },
+        { value: "Medium", label: "Media" },
+        { value: "High", label: "Alta" },
+    ];
 
 
     function handleSubmit(e) {
@@ -106,9 +111,12 @@ function CreateTaskModal({ onClose, onCreate, position }) {
                     </div>
                     <div className={styles.field}>
                         <Dropdown
-                            value={form.priority}
-                            options={["Low", "Medium", "High"]}
-                            onChange={val => setForm(f => ({ ...f, priority: val }))}
+                            value={priorityOptions.find(opt => opt.value === form.priority)?.label ?? "Media"}
+                            options={priorityOptions.map(opt => opt.label)}
+                            onChange={label => setForm(f => ({
+                                ...f,
+                                priority: priorityOptions.find(opt => opt.label === label)?.value ?? "Medium"
+                            }))}
                         />
                     </div>
 

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
   Download, X, TrendingUp, Clock,
-  Flame, Timer, FileText, LayoutGrid, List,
+  Flame, Timer, FileText, LayoutGrid, List, Sparkles
 } from "lucide-react";
 import styles from "./Stats.module.css";
 import { useStatsData, formatDuration } from "../../stats/hooks/useStatsData";
 import { useBoard } from "../../../contexts/BoardContext";
+import { useGeminiAdvice } from "../../../hooks/useGeminiAdvice";
 
 // Mapea category → clase CSS del tag
 function tagClass(category) {
@@ -18,6 +19,13 @@ function tagClass(category) {
   return map[category] ?? styles.tagDefault;
 }
 
+function categoryLabel(category) {
+  if (category === 'PRODUCT DESIGN') return 'DISENO DE PRODUCTO';
+  if (category === 'ENGINEERING') return 'INGENIERIA';
+  if (category === 'PLANNING') return 'PLANIFICACION';
+  return category;
+}
+
 // Formatea fecha para el label del grupo
 function toDateLabel(isoString) {
   const d = new Date(isoString);
@@ -26,10 +34,10 @@ function toDateLabel(isoString) {
   yesterday.setDate(today.getDate() - 1);
 
   if (d.toDateString() === today.toDateString())
-    return `TODAY, ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }).toUpperCase()}`;
+    return `HOY, ${d.toLocaleDateString('es-ES', { month: 'long', day: 'numeric' }).toUpperCase()}`;
   if (d.toDateString() === yesterday.toDateString())
-    return `YESTERDAY, ${d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }).toUpperCase()}`;
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+    return `AYER, ${d.toLocaleDateString('es-ES', { month: 'long', day: 'numeric' }).toUpperCase()}`;
+  return d.toLocaleDateString('es-ES', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
 }
 
 export default function StatsOverlay({ onClose }) {
@@ -42,13 +50,15 @@ export default function StatsOverlay({ onClose }) {
     daysRange,
   });
 
+  const { advice, loadingAdvice } = useGeminiAdvice(sessions, stats.completedCount);
+
   // Mapear sessions al shape de la UI
   const mappedSessions = sessions.map(s => {
     const checklist = Array.isArray(s.task_checklist) ? s.task_checklist : [];
     return {
       id: s.id,
       date: toDateLabel(s.started_at),
-      title: s.task_title || 'Untitled',
+      title: s.task_title || 'Sin titulo',
       category: s.task_category || 'General',
       time: formatDuration(s.duration_seconds ?? 0),
       checklist: {
@@ -73,16 +83,16 @@ export default function StatsOverlay({ onClose }) {
         {/* ── Header ── */}
         <div className={styles.header}>
           <div>
-            <h1 className={styles.title}>Completed Tasks</h1>
+            <h1 className={styles.title}>Tareas completadas</h1>
             <p className={styles.subtitle}>
-              You focused for{' '}
+              Te enfocaste durante{' '}
               <strong>{loading ? '...' : stats.totalFocusTime}</strong>{' '}
-              in the last {daysRange} days.
+              en los ultimos {daysRange} dias.
             </p>
           </div>
           <div className={styles.headerActions}>
             <button className={styles.exportBtn}>
-              <Download size={14} /> Export History
+              <Download size={14} /> Exportar historial
             </button>
             <button className={styles.closeBtn} onClick={onClose}>
               <X size={16} />
@@ -93,63 +103,73 @@ export default function StatsOverlay({ onClose }) {
         {/* ── Stats cards ── */}
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>COMPLETED</span>
+            <span className={styles.statLabel}>COMPLETADAS</span>
             <span className={styles.statValue}>
               {loading ? '—' : stats.completedCount}
             </span>
             <span className={styles.statSub}>
-              <TrendingUp size={12} /> Tasks done
+              <TrendingUp size={12} /> Tareas hechas
             </span>
           </div>
 
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>FOCUS TIME</span>
+            <span className={styles.statLabel}>TIEMPO DE ENFOQUE</span>
             <span className={styles.statValue}>
               {loading ? '—' : stats.totalFocusTime}
             </span>
             <span className={styles.statSub}>
-              <Clock size={12} /> Total focused
+              <Clock size={12} /> Total enfocado
             </span>
           </div>
 
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>AVG SESSION</span>
+            <span className={styles.statLabel}>SESION PROMEDIO</span>
             <span className={styles.statValue}>
               {loading ? '—' : stats.avgSession}
             </span>
             <span className={styles.statSub}>
               <Timer size={12} />
               {!loading && parseInt(stats.avgSession) >= 45
-                ? 'Highly Consistent'
+                ? 'Muy constante'
                 : !loading && parseInt(stats.avgSession) >= 25
-                  ? 'Consistent'
-                  : 'Building Habit'}
+                  ? 'Constante'
+                  : 'Construyendo habito'}
             </span>
           </div>
 
           <div className={`${styles.statCard} ${styles.statCardAccent}`}>
-            <span className={styles.statLabel}>DEEP WORK STREAK</span>
+            <span className={styles.statLabel}>RACHA DE DEEPWORK</span>
             <span className={styles.statValue}>
-              {loading ? '—' : `${stats.streak} ${stats.streak === 1 ? 'Day' : 'Days'}`}
+              {loading ? '—' : `${stats.streak} ${stats.streak === 1 ? 'Dia' : 'Dias'}`}
             </span>
             <span className={`${styles.statSub} ${styles.statSubWarm}`}>
               <Flame size={12} />
-              {!loading && stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
+              {!loading && stats.streak > 0 ? 'Sigue asi!' : 'Empieza hoy!'}
             </span>
           </div>
+        </div>
+
+        <div className={styles.adviceContainer}>
+          <div className={styles.adviceHeader}>
+            <Sparkles size={16} className={styles.adviceIcon} />
+            <span className={styles.adviceTitle}>Consejo Diario IA</span>
+          </div>
+          <p className={styles.adviceText}>
+            {loadingAdvice ? "Analizando tus patrones de concentración..." : advice}
+          </p>
         </div>
 
         {/* ── Filtros ── */}
         <div className={styles.filtersRow}>
           <div className={styles.filterGroup}>
-            <button className={styles.filterActive}>All Sessions</button>
+            <button className={styles.filterActive}>Todas las sesiones</button>
             {[7, 30, 90].map(d => (
               <button
                 key={d}
                 className={daysRange === d ? styles.filterActive : styles.filterBtn}
                 onClick={() => setDaysRange(d)}
               >
-                Last {d} Days
+                Ultimos {d} dias
               </button>
             ))}
           </div>
@@ -172,11 +192,11 @@ export default function StatsOverlay({ onClose }) {
         {/* ── Lista de sesiones ── */}
         {loading ? (
           <p style={{ color: '#aaa', textAlign: 'center', padding: '40px 0' }}>
-            Loading sessions...
+            Cargando sesiones...
           </p>
         ) : Object.keys(grouped).length === 0 ? (
           <p style={{ color: '#aaa', textAlign: 'center', padding: '40px 0' }}>
-            No sessions yet. Start focusing!
+            Aun no hay sesiones. Empieza a enfocarte!
           </p>
         ) : (
           <div className={styles.taskList}>
@@ -195,23 +215,23 @@ export default function StatsOverlay({ onClose }) {
                           <div>
                             <p className={styles.taskTitle}>{session.title}</p>
                             <span className={`${styles.taskTag} ${tagClass(session.category)}`}>
-                              {session.category.toUpperCase()}
+                              {categoryLabel(session.category).toUpperCase()}
                             </span>
                           </div>
                           <div className={styles.taskTimeBadge}>
                             <span className={styles.taskTime}>
                               <Clock size={12} /> {session.time}
                             </span>
-                            <span className={styles.taskFocused}>FOCUSED</span>
+                            <span className={styles.taskFocused}>ENFOCADO</span>
                           </div>
                         </div>
 
                         {session.checklist.total > 0 && (
                           <>
                             <div className={styles.checklistRow}>
-                              <span className={styles.checklistLabel}>CHECKLIST SUMMARY</span>
+                              <span className={styles.checklistLabel}>RESUMEN DE LISTA</span>
                               <span className={styles.checklistCount}>
-                                {session.checklist.done} / {session.checklist.total} DONE
+                                {session.checklist.done} / {session.checklist.total} HECHAS
                               </span>
                               <div className={styles.iconCircle}>
                                 <FileText size={13} />

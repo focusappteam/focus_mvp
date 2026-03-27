@@ -458,3 +458,22 @@
     /* rojo suave al hacer hover */
     border-color: #f87171;
 }
+
+/* ── Botón "Ver tutorial" en el Header ───────────────────────────────────── */
+.tutorialButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #9ca3af;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tutorialButton:hover {
+    color: #4c6f70;
+    border-color: #4c6f70;
+}

@@ -101,10 +101,10 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
     <div className={styles.overlay}>
       <div className={styles.topBar}>
         <span className={styles.topBarTitle}>
-          {isBreak ? "BREAK TIME" : "FOCUS MODE"}
+          {isBreak ? "DESCANSO" : "MODO FOCUS"}
         </span>
         <button className={styles.leaveBtn} onClick={handleExit}>
-          <X size={14} /> LEAVE SESSION
+          <X size={14} /> SALIR DE LA SESION
         </button>
       </div>
 
@@ -115,8 +115,8 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
           <span className={styles.timerDigits}>{seconds}</span>
         </div>
         <div className={styles.timerLabels}>
-          <span>MINUTES</span>
-          <span>SECONDS</span>
+          <span>MINUTOS</span>
+          <span>SEGUNDOS</span>
         </div>
       </div>
 
@@ -132,7 +132,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
             <>
               <div className={styles.subtaskRow}>
                 <span className={styles.subtaskLabel}>
-                  {completedSubtasks} OF {totalSubtasks} SUBTASKS COMPLETE
+                  {completedSubtasks} DE {totalSubtasks} SUBTAREAS COMPLETADAS
                 </span>
 
                 <div className={styles.progressBar}>
@@ -167,26 +167,26 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
       <div className={styles.controls}>
         {!isBreak && (
           <button className={styles.btnSecondary} onClick={handlePauseResume}>
-            {isRunning ? "Pause" : "Resume"}
+            {isRunning ? "Pausar" : "Reanudar"}
           </button>
         )}
         {!isBreak && (
           <button className={styles.btnSecondary} onClick={handleBreak}>
-            <Coffee size={14} /> Break
+            <Coffee size={14} /> Descanso
           </button>
         )}
         {isBreak && (
           <button className={styles.btnSecondary} onClick={handleBackToFocus}>
-            Back to Focus
+            Volver al enfoque
           </button>
         )}
         <button className={styles.btnPrimary} onClick={handleComplete}>
-          <CheckCircle size={14} /> Complete Task
+          <CheckCircle size={14} /> Completar tarea
         </button>
       </div>
 
       <p className={styles.hint}>
-        {isBreak ? "Take a breather! You earned it." : "Press ESC to leave focus mode."}
+        {isBreak ? "Respira un momento, te lo ganaste." : "Presiona ESC para salir del modo Focus."}
       </p>
     </div>
   );

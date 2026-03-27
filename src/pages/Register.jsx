@@ -48,7 +48,7 @@ export default function Register() {
     // Si tienes "Confirm email" activo, avisamos al usuario.
     setSuccess("¡Cuenta creada! Revisa tu correo para confirmarla.");
     setLoading(false);
-    setTimeout(() => navigate("/login", { replace: true }), 3000);
+    setTimeout(() => navigate("/check-email", { replace: true }), 5000);
   }
 
   return (
@@ -66,8 +66,8 @@ export default function Register() {
           </div>
 
           <div className={styles.cardHeader}>
-            <h1 className={styles.cardTitle}>Join the Studio</h1>
-            <p className={styles.cardSubtitle}>Begin your journey to deep focus</p>
+            <h1 className={styles.cardTitle}>Unete al estudio</h1>
+            <p className={styles.cardSubtitle}>Comienza tu camino hacia el enfoque profundo</p>
           </div>
 
           {error && <p className={styles.errorMsg}>{error}</p>}
@@ -75,13 +75,13 @@ export default function Register() {
 
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>FULL NAME</label>
+              <label className={styles.label}>NOMBRE COMPLETO</label>
               <div className={styles.inputWrapper}>
                 <User size={15} className={styles.inputIcon} />
                 <input
                   className={styles.input}
                   type="text"
-                  placeholder="e.g. Alex Rivera"
+                  placeholder="ej. Alex Rivera"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                   required
@@ -90,7 +90,7 @@ export default function Register() {
             </div>
 
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>EMAIL ADDRESS</label>
+              <label className={styles.label}>CORREO ELECTRONICO</label>
               <div className={styles.inputWrapper}>
                 <Mail size={15} className={styles.inputIcon} />
                 <input
@@ -105,7 +105,7 @@ export default function Register() {
             </div>
 
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>PASSWORD</label>
+              <label className={styles.label}>CONTRASEÑA</label>
               <div className={styles.inputWrapper}>
                 <Lock size={15} className={styles.inputIcon} />
                 <input
@@ -127,12 +127,12 @@ export default function Register() {
             </div>
 
             <button className={styles.btnPrimary} type="submit" disabled={loading}>
-              {loading ? "Creating account..." : "Create Account"}
+              {loading ? "Creando cuenta..." : "Crear cuenta"}
             </button>
           </form>
 
           <div className={styles.divider}>
-            <span className={styles.dividerText}>OR CONTINUE WITH</span>
+            <span className={styles.dividerText}>O CONTINUAR CON</span>
           </div>
 
           <div className={styles.socialRow}>
@@ -154,8 +154,8 @@ export default function Register() {
           </div>
 
           <p className={styles.switchText}>
-            Already have an account?{" "}
-            <Link to="/login" className={styles.switchLink}>Login</Link>
+            Ya tienes una cuenta?{" "}
+            <Link to="/login" className={styles.switchLink}>Iniciar sesion</Link>
           </p>
         </div>
 
@@ -166,11 +166,11 @@ export default function Register() {
       <footer className={styles.footerRegister}>
         <span>FOCUS.app</span>
         <div className={styles.footerLinks}>
-          <a href="#">PRIVACY POLICY</a>
-          <a href="#">TERMS OF SERVICE</a>
-          <a href="#">CONTACT</a>
+          <a href="#">POLITICA DE PRIVACIDAD</a>
+          <a href="#">TERMINOS DEL SERVICIO</a>
+          <a href="#">CONTACTO</a>
         </div>
-        <span>© 2026 FOCUS.APP. ALL RIGHTS RESERVED.</span>
+        <span>© 2026 FOCUS.APP. TODOS LOS DERECHOS RESERVADOS.</span>
       </footer>
     </div>
   );

@@ -20,7 +20,7 @@ import {
 import { useTaskTimer } from "../../focusMode/hooks/useTaskTimer";
 import { useToast } from "../../../hooks/useToast";
 import Toast from "../../../components/UI/Toast";
-import Task from "./Task";
+import { useOnboarding } from "../../../hooks/useOnboarding";
 
 
 
@@ -31,8 +31,6 @@ const ACCENT_COLORS = [
   "#f472b6",
   "#34d399"
 ];
-
-// duration now comes from context
 
 function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   const [form, setForm] = useState({
@@ -66,6 +64,15 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   const { toast, toastVisible, showToast } = useToast();
   const [editingTagIndex, setEditingTagIndex] = useState(null);
   const [editingTagValue, setEditingTagValue] = useState("");
+  const { setIsEditingTaskOpen } = useOnboarding();
+
+  useEffect(() => {
+    setIsEditingTaskOpen(true);
+
+    return () => {
+      setIsEditingTaskOpen(false);
+    };
+  }, [setIsEditingTaskOpen]);
 
   useEffect(() => {
     if (Notification.permission === "default") {
@@ -77,7 +84,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
     handleStart(() => {
       const updatedTask = { ...task, timeActive: (task.timeActive ?? 0) + 1500 };
       onSave(updatedTask);
-      showToast("Sesion Completada!");
+      showToast("Sesion completada!");
     });
   }
 
@@ -276,7 +283,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
   function formatDate(dateString) {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+    return date.toLocaleDateString("es-ES", { month: "long", day: "numeric" });
   }
 
   return (
@@ -313,14 +320,14 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
           </div>
 
           <div className={styles.meta}>
-            Created: {formatDate(form.createdAt)} •{" "}
+            Creada: {formatDate(form.createdAt)} •{" "}
             <span className={styles[form.priority]}>
-              Priority: {form.priority}
+              Prioridad: {form.priority === "High" ? "Alta" : form.priority === "Low" ? "Baja" : "Media"}
             </span>
           </div>
 
           <div className={styles.field}>
-            <textarea name="description" id="description" placeholder="  No description provided." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+            <textarea name="description" id="description" placeholder="  Sin descripcion." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
 
 
           </div>
@@ -328,7 +335,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
           <div className={styles.checklistSection}>
             <div className={styles.sectionHeader}>
               <CheckSquare size={14} className={styles.sectionIcon} />
-              PREPARATION CHECKLIST
+              LISTA DE TAREAS
             </div>
             <div className={styles.checklistItems}>
               {form.checklist.map((item, index) => (
@@ -381,7 +388,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   <input
                     type="text"
                     className={styles.newChecklistInput}
-                    placeholder="Enter checklist item..."
+                    placeholder="Ingresa un elemento a la lista..."
                     value={newChecklistItem}
                     onChange={(e) => setNewChecklistItem(e.target.value)}
                     onKeyDown={handleAddChecklistItem}
@@ -397,7 +404,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   <div className={styles.addIcon}>
                     <Plus size={14} />
                   </div>
-                  <span className={styles.addText}>Add checklist item</span>
+                  <span className={styles.addText}>Agregar elemento</span>
                 </div>
               )}
             </div>
@@ -438,7 +445,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
               <input
                 type="text"
                 className={styles.tagInput}
-                placeholder="Tag name"
+                placeholder="Nombre de etiqueta"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyDown={handleAddTag}
@@ -450,7 +457,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                 className={styles.addTagButton}
                 onClick={() => setIsAddingTag(true)}
               >
-                <Plus size={12} /> Add Tag
+                <Plus size={12} /> Agregar etiqueta
               </button>
             )}
           </div>
@@ -470,7 +477,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
             >
               <span className={styles.timerTime}>{formattedTime}</span>
               <span className={styles.timerSubtext}>
-                {isStopwatch ? "STOPWATCH" : "FOCUS SESSION"}
+                {isStopwatch ? "CRONOMETRO" : "SESION DE ENFOQUE"}
               </span>
             </div>
             <div className={styles.timerControls}>
@@ -480,7 +487,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   onClick={handlePauseTimer}
                 >
                   <Pause size={12} className={styles.playIcon} />
-                  Pause
+                  Pausar
                 </button>
               ) : (
                 <button
@@ -489,7 +496,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                   disabled={!canStart || task.status === "completed"}
                 >
                   <Play size={12} className={styles.playIcon} />
-                  {isRunning ? "Pause" : hasStarted ? "Resume" : "Start"}
+                  {isRunning ? "Pausar" : hasStarted ? "Reanudar" : "Iniciar"}
                 </button>
               )}
               <button
@@ -521,12 +528,12 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
                 disabled={isRunning || task.status === "completed"}
               >
                 <Clock size={14} />
-                Stopwatch
+                Cronometro
               </button>
             </div>
             {!canStart && !isRunning && (
               <div className={styles.timerWarning}>
-                Timer active on another task
+                Hay un temporizador activo en otra tarea
               </div>
             )}
           </div>
@@ -535,7 +542,7 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
           <div className={styles.accentSection}>
             <div className={styles.accentLabel}>
               <Palette size={14} className={styles.accentIcon} />
-              CARD ACCENT
+              ACENTO DE TARJETA
             </div>
             <div className={styles.colorPicker}>
               {ACCENT_COLORS.map((color) => (
@@ -555,11 +562,11 @@ function EditTaskModal({ onClose, onSave, onDelete, onComplete, task }) {
               className={styles.completeButton}
               onClick={handleComplete}
             >
-              Mark as Complete
+              Marcar como completa
               <CheckCheck size={18} className={styles.completeIcon} />
             </button>
             <button className={styles.deleteButton} onClick={handleDelete}>
-              Delete Task
+              Eliminar tarea
               <Trash2 size={16} className={styles.deleteIcon} />
             </button>
           </div>
