@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
   Download, X, TrendingUp, Clock,
-  Flame, Timer, FileText, LayoutGrid, List,
+  Flame, Timer, FileText, LayoutGrid, List, Sparkles
 } from "lucide-react";
 import styles from "./Stats.module.css";
 import { useStatsData, formatDuration } from "../../stats/hooks/useStatsData";
 import { useBoard } from "../../../contexts/BoardContext";
+import { useGeminiAdvice } from "../../../hooks/useGeminiAdvice";
 
 // Mapea category → clase CSS del tag
 function tagClass(category) {
@@ -41,6 +42,8 @@ export default function StatsOverlay({ onClose }) {
     workspaceId: activeWorkspaceId,
     daysRange,
   });
+
+  const { advice, loadingAdvice } = useGeminiAdvice(sessions, stats.completedCount);
 
   // Mapear sessions al shape de la UI
   const mappedSessions = sessions.map(s => {
@@ -137,6 +140,16 @@ export default function StatsOverlay({ onClose }) {
               {!loading && stats.streak > 0 ? 'Keep it up!' : 'Start today!'}
             </span>
           </div>
+        </div>
+
+        <div className={styles.adviceContainer}>
+          <div className={styles.adviceHeader}>
+            <Sparkles size={16} className={styles.adviceIcon} />
+            <span className={styles.adviceTitle}>Consejo Diario IA</span>
+          </div>
+          <p className={styles.adviceText}>
+            {loadingAdvice ? "Analizando tus patrones de concentración..." : advice}
+          </p>
         </div>
 
         {/* ── Filtros ── */}
