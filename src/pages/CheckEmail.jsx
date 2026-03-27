@@ -5,8 +5,13 @@ import styles from "./auth.module.css";
 export default function CheckEmail() {
   return (
     <div className={styles.page}>
-      <div className={styles.containerCenter}>
-        <p className={styles.brandTop}>FOCUS.app</p>
+      <nav className={styles.nav}>
+        <span className={styles.navLogo}>
+          <span className={styles.navLogoPrimary}>FOCUS</span>
+          <span className={styles.navLogoSecondary}>.app</span>
+        </span>
+      </nav>
+      <div className={styles.container}>
 
         <div className={styles.card}>
           <div className={styles.iconCircle}>
@@ -20,25 +25,19 @@ export default function CheckEmail() {
             </p>
           </div>
 
-          <a href="mailto:" className={styles.btnPrimary}>
-            Abrir aplicación de correo
+          <a href="/login" className={styles.btnPrimary}>
+            Volver al login
           </a>
-
-          <div className={styles.resendRow}>
-            <p className={styles.resendLabel}>¿NO LO RECIBISTE?</p>
-            <button className={styles.switchLink}>Reenviar enlace</button>
-          </div>
-        </div>
-
-        <div className={styles.footerCenter}>
-          <div className={styles.footerDividerRow}>
-            <span className={styles.footerLine} />
-            <span className={styles.footerBrand}>FOCUS.APP</span>
-            <span className={styles.footerLine} />
-          </div>
-          <p className={styles.footerSub}>FOCUS.APP © 2026</p>
         </div>
       </div>
+      <footer className={styles.footer}>
+        <span>© 2026 FOCUS.APP. TODOS LOS DERECHOS RESERVADOS.</span>
+        <div className={styles.footerLinks}>
+          <a href="#">POLITICA DE PRIVACIDAD</a>
+          <a href="#">TERMINOS DEL SERVICIO</a>
+          <a href="#">CONTACTO</a>
+        </div>
+      </footer>
     </div>
   );
 }

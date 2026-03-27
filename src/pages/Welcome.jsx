@@ -7,8 +7,13 @@ export default function Welcome() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.containerCenter}>
-        <p className={styles.brandTop}>FOCUS.app</p>
+      <nav className={styles.nav}>
+        <span className={styles.navLogo}>
+          <span className={styles.navLogoPrimary}>FOCUS</span>
+          <span className={styles.navLogoSecondary}>.app</span>
+        </span>
+      </nav>
+      <div className={styles.container}>
 
         <div className={styles.card}>
           <div className={styles.iconCircle}>
@@ -16,9 +21,10 @@ export default function Welcome() {
           </div>
 
           <div className={styles.cardHeader}>
-            <h1 className={styles.cardTitle}>Bienvenido al espacio de trabajo</h1>
+            <h1 className={styles.cardTitle}>Bienvenido a FOCUS</h1>
             <p className={styles.cardSubtitle}>
-              Tu correo ha sido confirmado. Estás listo para dejar el ruido atrás y entrar en tu estado de foco profundo.
+              Tu correo ha sido confirmado.<br></br>
+              Estás listo para dejar el ruido atrás y entrar en tu estado de foco profundo.
             </p>
           </div>
 
@@ -26,19 +32,22 @@ export default function Welcome() {
             Entrar al workspace <ArrowRight size={16} />
           </button>
 
-          <p className={styles.settingUpText}>CONFIGURANDO TU ESPACIO DE TRABAJO...</p>
+
           <div className={styles.dotsRow}>
             <span className={styles.dotActive} />
             <span className={styles.dot} />
             <span className={styles.dot} />
           </div>
         </div>
-
-        <p className={styles.needHelp}>
-          ¿Necesitas ayuda?{" "}
-          <a href="#" className={styles.switchLink}>Visita nuestro centro de soporte</a>
-        </p>
       </div>
+      <footer className={styles.footer}>
+        <span>© 2026 FOCUS.APP. TODOS LOS DERECHOS RESERVADOS.</span>
+        <div className={styles.footerLinks}>
+          <a href="#">POLITICA DE PRIVACIDAD</a>
+          <a href="#">TERMINOS DEL SERVICIO</a>
+          <a href="#">CONTACTO</a>
+        </div>
+      </footer>
     </div>
   );
 }
