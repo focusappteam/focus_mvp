@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { X, Coffee, CheckCircle, Check } from "lucide-react";
 import styles from "../focus-mode.module.css";
 import { useFocusMode } from "../hooks/useFocusMode";
+import { STRETCHES } from "../config/stretches";
 
 const requestFullscreen = (elem) => {
   if (elem.requestFullscreen) return elem.requestFullscreen();
@@ -18,17 +19,60 @@ const exitFullscreen = () => {
   if (document.msExitFullscreen) return document.msExitFullscreen();
 };
 
+/* ── ActiveBreakCard ─────────────────────────────────────── */
+const BREAK_DURATION = 5 * 60; // 300 s
 
-const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
+function getActiveStretchIndex(elapsed) {
+  let cum = 0;
+  for (let i = 0; i < STRETCHES.length; i++) {
+    cum += STRETCHES[i].durationSeconds;
+    if (elapsed < cum) return i;
+  }
+  return STRETCHES.length - 1;
+}
+
+const ActiveBreakCard = ({ breakSeconds }) => {
+  const elapsed = BREAK_DURATION - breakSeconds;
+  const activeIndex = getActiveStretchIndex(elapsed);
+  const activeStretch = STRETCHES[activeIndex];
+
+  return (
+    <div className={styles.breakCard}>
+      <span className={styles.breakLabel}>ACTIVE BREAK</span>
+
+      <div className={styles.cueContainer} key={activeIndex}>
+        <p className={styles.cueText}>{activeStretch.cue}</p>
+      </div>
+
+      {/* dot indicators */}
+      <div className={styles.dotRow}>
+        {STRETCHES.map((s, i) => (
+          <span
+            key={i}
+            className={`${styles.dot} ${i === activeIndex ? styles.dotActive : ""} ${i < activeIndex ? styles.dotDone : ""}`}
+          />
+        ))}
+      </div>
+
+      <span className={styles.cueCounter}>
+        {activeIndex + 1} / {STRETCHES.length}
+      </span>
+    </div>
+  );
+};
+
+
+const FocusOverlay = ({ activeTask, startInBreakMode = false, onExit, onCompleteTask, onUpdateTask }) => {
   const {
     isRunning,
     isBreak,
     formattedTime,
     breakFormattedTime,
+    breakSeconds,
     handlePauseResume,
     handleBreak,
     handleBackToFocus,
-  } = useFocusMode(activeTask);
+  } = useFocusMode(activeTask, startInBreakMode);
 
   const [checklist, setChecklist] = useState(activeTask?.checklist ?? []);
 
@@ -101,7 +145,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
     <div className={styles.overlay}>
       <div className={styles.topBar}>
         <span className={styles.topBarTitle}>
-          {isBreak ? "DESCANSO" : "MODO FOCUS"}
+          {isBreak ? "ACTIVE BREAK" : "MODO FOCUS"}
         </span>
         <button className={styles.leaveBtn} onClick={handleExit}>
           <X size={14} /> SALIR DE LA SESION
@@ -120,49 +164,54 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
         </div>
       </div>
 
-      <div className={styles.taskCard}>
-        <div className={styles.taskInfo}>
-          <h2 className={styles.taskTitle}>{activeTask.title}</h2>
-          {activeTask.description && (
-            <p className={styles.taskDesc}>{activeTask.description}</p>
-          )}
+      {/* ── Active Break stretching card ───────────────────── */}
+      {isBreak && <ActiveBreakCard breakSeconds={breakSeconds} />}
 
+      {/* ── Focus-mode task card (hidden during break) ──── */}
+      {!isBreak && (
+        <div className={styles.taskCard}>
+          <div className={styles.taskInfo}>
+            <h2 className={styles.taskTitle}>{activeTask.title}</h2>
+            {activeTask.description && (
+              <p className={styles.taskDesc}>{activeTask.description}</p>
+            )}
 
-          {totalSubtasks > 0 && (
-            <>
-              <div className={styles.subtaskRow}>
-                <span className={styles.subtaskLabel}>
-                  {completedSubtasks} DE {totalSubtasks} SUBTAREAS COMPLETADAS
-                </span>
+            {totalSubtasks > 0 && (
+              <>
+                <div className={styles.subtaskRow}>
+                  <span className={styles.subtaskLabel}>
+                    {completedSubtasks} DE {totalSubtasks} SUBTAREAS COMPLETADAS
+                  </span>
 
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{ width: `${progress}%` }}
-                  />
+                  <div className={styles.progressBar}>
+                    <div
+                      className={styles.progressFill}
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+
+                  <span className={styles.progressPct}>{Math.round(progress)}%</span>
                 </div>
 
-                <span className={styles.progressPct}>{Math.round(progress)}%</span>
-              </div>
-
-              <div className={styles.checklistItems}>
-                {checklist.map((item, index) => (
-                  <div
-                    key={index}
-                    className={`${styles.checklistItem} ${item.checked ? styles.checklistItemChecked : ""}`}
-                    onClick={() => handleChecklistToggle(index)}
-                  >
-                    <div className={`${styles.checkbox} ${item.checked ? styles.checkboxChecked : ""}`}>
-                      {item.checked && <Check size={10} />}
+                <div className={styles.checklistItems}>
+                  {checklist.map((item, index) => (
+                    <div
+                      key={index}
+                      className={`${styles.checklistItem} ${item.checked ? styles.checklistItemChecked : ""}`}
+                      onClick={() => handleChecklistToggle(index)}
+                    >
+                      <div className={`${styles.checkbox} ${item.checked ? styles.checkboxChecked : ""}`}>
+                        {item.checked && <Check size={10} />}
+                      </div>
+                      <span className={styles.checklistText}>{item.text}</span>
                     </div>
-                    <span className={styles.checklistText}>{item.text}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-            </>
-          )}
-        </div></div>
+              </>
+            )}
+          </div></div>
+      )}
 
       <div className={styles.controls}>
         {!isBreak && (
@@ -186,7 +235,7 @@ const FocusOverlay = ({ activeTask, onExit, onCompleteTask, onUpdateTask }) => {
       </div>
 
       <p className={styles.hint}>
-        {isBreak ? "Respira un momento, te lo ganaste." : "Presiona ESC para salir del modo Focus."}
+        {isBreak ? "Stretch it out — you earned it." : "Presiona ESC para salir del modo Focus."}
       </p>
     </div>
   );

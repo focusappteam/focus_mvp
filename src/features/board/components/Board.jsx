@@ -12,6 +12,10 @@ import Toast from "../../../components/UI/Toast";
 import { useToast } from "../../../hooks/useToast";
 import { useOnboardingRef } from "../../../hooks/useOnboarding";
 import { useOnboarding } from "../../../hooks/useOnboarding";
+import BreakPromptToast from "../../../components/UI/BreakPromptToast";
+import DeepWorkBreakPromptToast from "../../../components/UI/DeepWorkBreakPromptToast";
+import StretchWindow from "../../focusMode/components/StretchWindow";
+import { useDeepWorkBreak } from "../../focusMode/hooks/useDeepWorkBreak";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
@@ -20,7 +24,7 @@ const DEFAULT_TASK_WIDTH = 260;
 const DEFAULT_TASK_HEIGHT = 120;
 const HEADER_HEIGHT = 1;
 
-function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
+function Board({ isFocusOverlayOpen, onExitFocus, onEnterFocus, sidebarOpen }) {
     const { tasks, addTask, updateTask, deleteTask, completeTask, activeWorkspaceId } = useBoard();
 
     const canvasRef = useRef(null);
@@ -55,7 +59,7 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
         setOffset({ x: 0, y: 0 });
     }, [activeWorkspaceId]);
 
-    const { state: timerState } = useTimer();
+    const { state: timerState, sessionCompleteCount, pause: pauseTimer } = useTimer();
     const activeTask = useMemo(
         () => tasks.find(t => t.id === timerState.taskId) ?? null,
         [tasks, timerState.taskId]
@@ -66,6 +70,54 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
         [timerState.taskId, timerState.timers]
     );
     const isFocusMode = focusedTaskId !== null;
+
+    // ── Break prompt toast (outside focus overlay) ────────────
+    const [breakPromptVisible, setBreakPromptVisible] = useState(false);
+    const [startInBreakMode, setStartInBreakMode] = useState(false);
+    const sessionCompleteRef = useRef(0);
+
+    useEffect(() => {
+        // Skip the initial render (count === 0)
+        if (sessionCompleteCount === 0) return;
+        // Only react to new increments
+        if (sessionCompleteCount !== sessionCompleteRef.current) {
+            sessionCompleteRef.current = sessionCompleteCount;
+            // Only show if the focus overlay is NOT open
+            if (!isFocusOverlayOpen) {
+                setBreakPromptVisible(true);
+            }
+        }
+    }, [sessionCompleteCount, isFocusOverlayOpen]);
+
+    const handleBreakAccept = useCallback(() => {
+        setBreakPromptVisible(false);
+        setStartInBreakMode(true);
+        if (onEnterFocus) onEnterFocus();
+    }, [onEnterFocus]);
+
+    const handleBreakDeny = useCallback(() => {
+        setBreakPromptVisible(false);
+    }, []);
+
+    const handleBreakLater = useCallback(() => {
+        setBreakPromptVisible(false);
+        // Could set a reminder timer here in the future
+    }, []);
+
+    // ── 90-minute deep-work break prompt (independent system) ──
+    const {
+        isPromptOpen: isDwPromptOpen,
+        isBreakActive: isDwBreakActive,
+        accept: dwAccept,
+        deny: dwDeny,
+        postpone: dwPostpone,
+        finishBreak: dwFinishBreak,
+    } = useDeepWorkBreak();
+
+    const handleDwAccept = useCallback(() => {
+        if (isFocusMode) pauseTimer();
+        dwAccept();
+    }, [isFocusMode, pauseTimer, dwAccept]);
 
     const handleTaskResize = useCallback((taskId, dimensions) => {
         setTaskDimensions(prev => {
@@ -293,11 +345,28 @@ function Board({ isFocusOverlayOpen, onExitFocus, sidebarOpen }) {
             {isFocusOverlayOpen && activeTask && (
                 <FocusOverlay
                     activeTask={activeTask}
-                    onExit={onExitFocus}
+                    startInBreakMode={startInBreakMode}
+                    onExit={() => { setStartInBreakMode(false); onExitFocus(); }}
                     onUpdateTask={updateTask}
-                    onCompleteTask={(taskId) => { completeTask(taskId); onExitFocus(); }}
+                    onCompleteTask={(taskId) => { completeTask(taskId); setStartInBreakMode(false); onExitFocus(); }}
                 />
             )}
+
+            <BreakPromptToast
+                visible={breakPromptVisible}
+                onAccept={handleBreakAccept}
+                onDeny={handleBreakDeny}
+                onLater={handleBreakLater}
+            />
+
+            <DeepWorkBreakPromptToast
+                visible={isDwPromptOpen}
+                onAccept={handleDwAccept}
+                onDeny={dwDeny}
+                onPostpone={dwPostpone}
+            />
+
+            {isDwBreakActive && <StretchWindow onClose={dwFinishBreak} />}
         </div>
     );
 }

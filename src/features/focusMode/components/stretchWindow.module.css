@@ -1,0 +1,255 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    background: rgba(20, 30, 28, 0.42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal {
+    position: relative;
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border-radius: 18px;
+    border: 1.5px solid rgba(74, 124, 112, 0.18);
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.18),
+        0 0 0 1px rgba(74, 124, 112, 0.06);
+    padding: 24px 26px 22px;
+    animation: pop 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pop {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.eyebrow {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #4a7c70;
+    opacity: 0.75;
+}
+
+.totalTime {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #888;
+    font-variant-numeric: tabular-nums;
+}
+
+.closeBtn {
+    background: transparent;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.closeBtn:hover {
+    background: #f3f5f4;
+    color: #555;
+}
+
+/* ── Stretch body ──────────────────────────────────────── */
+.stretchBody {
+    text-align: center;
+    padding: 8px 0 18px;
+}
+
+.stretchName {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4a7c70;
+}
+
+.stretchCue {
+    margin: 0 0 18px;
+    font-size: 15px;
+    line-height: 1.45;
+    color: #2d5a50;
+    min-height: 44px;
+}
+
+.countdown {
+    font-size: 72px;
+    font-weight: 300;
+    letter-spacing: -2px;
+    color: #4a7c70;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    animation: tickIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tickIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Dots ──────────────────────────────────────────────── */
+.dots {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 6px 0 6px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d4ddd9;
+    transition: background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.dotActive {
+    background: #4a7c70;
+    transform: scale(1.35);
+    box-shadow: 0 0 0 3px rgba(74, 124, 112, 0.2);
+}
+
+.dotDone {
+    background: #8fbcb2;
+}
+
+.counter {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #aaa;
+    letter-spacing: 0.06em;
+    margin-bottom: 14px;
+}
+
+/* ── Footer / actions ──────────────────────────────────── */
+.footer {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.skipBtn,
+.finishBtn {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.skipBtn {
+    background: transparent;
+    color: #4a7c70;
+    border: 1.5px solid #c8ddd7;
+}
+
+.skipBtn:hover {
+    background: #f0f7f5;
+    border-color: #4a7c70;
+}
+
+.finishBtn {
+    background: #4a7c70;
+    color: #fff;
+    border: 1.5px solid #4a7c70;
+    flex: 1;
+}
+
+.finishBtn:hover {
+    background: #3a6860;
+    border-color: #3a6860;
+}
+
+/* ── Close confirmation ────────────────────────────────── */
+.confirm {
+    background: #faf8f3;
+    border: 1px solid #ece4cf;
+    border-radius: 10px;
+    padding: 14px 16px;
+    text-align: center;
+}
+
+.confirmText {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #5a4a1c;
+    line-height: 1.4;
+}
+
+.confirmActions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.confirmCancel,
+.confirmOk {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.confirmCancel {
+    background: transparent;
+    color: #4a7c70;
+    border: 1.5px solid #4a7c70;
+}
+
+.confirmCancel:hover {
+    background: #f0f7f5;
+}
+
+.confirmOk {
+    background: #c25a4a;
+    color: #fff;
+    border: 1.5px solid #c25a4a;
+}
+
+.confirmOk:hover {
+    background: #a8483a;
+    border-color: #a8483a;
+}
