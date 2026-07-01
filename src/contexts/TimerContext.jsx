@@ -42,6 +42,7 @@ export function TimerProvider({ children }) {
 
   const intervalRef = useRef(null);
   const listenersRef = useRef({});
+  const [sessionCompleteCount, setSessionCompleteCount] = useState(0);
   const saveTimeroutRef = useRef(null);
 
   // persist
@@ -104,6 +105,7 @@ export function TimerProvider({ children }) {
             if (title) {
               delete listenersRef.current.__title[id];
             }
+            setSessionCompleteCount(c => c + 1);
             if (Notification.permission === "granted") {
               new Notification("Sesion de enfoque completada!", { body: title || "" });
             }
@@ -274,7 +276,7 @@ export function TimerProvider({ children }) {
     });
   }, []);
 
-  const value = useMemo(() => ({ state, start, pause, reset, toggleMode, POMODORO_DURATION }), [state, start, pause, reset, toggleMode]);
+  const value = useMemo(() => ({ state, start, pause, reset, toggleMode, POMODORO_DURATION, sessionCompleteCount }), [state, start, pause, reset, toggleMode, sessionCompleteCount]);
 
   return (
     <TimerContext.Provider value={value}>

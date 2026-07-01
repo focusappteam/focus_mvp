@@ -290,3 +290,89 @@
   font-size: 13px;
   color: #444;
 }
+
+/* ── Active Break Card ───────────────────────────────────── */
+.breakCard {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(135deg, #e8f5f0 0%, #ffffff 100%);
+  border: 1.5px solid rgba(74, 124, 112, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(74, 124, 112, 0.10);
+  padding: 32px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.breakLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #4a7c70;
+  opacity: 0.7;
+}
+
+/* Cue area — the key attr on parent forces re-mount → animation replays */
+.cueContainer {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: cueEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cueText {
+  font-size: 22px;
+  font-weight: 500;
+  color: #2d5a50;
+  text-align: center;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0 8px;
+}
+
+@keyframes cueEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dot indicators */
+.dotRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d4ddd9;
+  transition: background 0.35s ease, transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.dotActive {
+  background: #4a7c70;
+  transform: scale(1.35);
+  box-shadow: 0 0 0 3px rgba(74, 124, 112, 0.2);
+}
+
+.dotDone {
+  background: #8fbcb2;
+}
+
+.cueCounter {
+  font-size: 11px;
+  font-weight: 600;
+  color: #aaa;
+  letter-spacing: 0.06em;
+}

@@ -29,6 +29,7 @@ function AppContent() {
             <Board
               isFocusOverlayOpen={isFocusOverlayOpen}
               onExitFocus={() => setIsFocusOverlayOpen(false)}
+              onEnterFocus={() => setIsFocusOverlayOpen(true)}
               sidebarOpen={sidebarOpen}
             />
           </Layout>
