@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
 
         if (!error && isMounted) {
           setProfile(data);
-          return;
+          return data;
         }
 
         if (error) {
@@ -89,12 +89,11 @@ export function AuthProvider({ children }) {
       // Cargamos perfil y sincronizamos con la extensión
       if (currentUser) {
         void loadProfile(currentUser.id).then((loadedProfile) => {
-          syncSessionWithExtension(currentUser, loadedProfile || null);
+          syncSessionWithExtension(currentUser, loadedProfile || null, session);
         });
       }
 
       // Cargamos perfil en background para evitar pantalla de carga infinita
-      void loadProfile(currentUser?.id);
     }
 
     async function bootstrapAuth() {
