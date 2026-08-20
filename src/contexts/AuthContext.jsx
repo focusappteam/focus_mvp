@@ -158,7 +158,7 @@ export function AuthProvider({ children }) {
     setUser(null);
     setProfile(null);
     setLoading(false);
-
+    syncSessionWithExtension(null, null);
     return { error };
   };
 
