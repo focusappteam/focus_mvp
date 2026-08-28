@@ -1,5 +1,5 @@
 const FOCUS_EXTENSION_ID = "cjfoieclaokfnegcpjhcljmpfbbpigfe";
-function syncSessionWithExtension(user, profile) {
+function syncSessionWithExtension(user, profile, session) {
   if (typeof window === "undefined" || !window.chrome?.runtime?.sendMessage) {
     return;
   }
@@ -9,7 +9,16 @@ function syncSessionWithExtension(user, profile) {
       FOCUS_EXTENSION_ID,
       {
         type: "FOCUS_SESSION_UPDATE",
-        payload: { user, profile },
+        payload: {
+          user,
+          profile,
+          tokens: session
+            ? {
+                access_token: session.access_token,
+                refresh_token: session.refresh_token,
+              }
+            : null,
+        },
       },
       (response) => {
         if (window.chrome.runtime.lastError) {
@@ -80,7 +89,7 @@ export function AuthProvider({ children }) {
 
       if (!currentUser) {
         setProfile(null);
-        syncSessionWithExtension(null, null);
+        syncSessionWithExtension(null, null, null);
       }
 
       // Nunca bloqueamos la UI esperando perfil

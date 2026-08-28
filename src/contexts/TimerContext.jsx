@@ -1,9 +1,32 @@
-import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { saveFocusSession } from '../utils/saveFocusSession';
-import { useAuth } from '../contexts/AuthContext';
+import {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+
+import { useAuth } from "../contexts/AuthContext";
+import { createFocusSession } from "../utils/createFocusSession";
+import { finishFocusSession } from "../utils/finishFocusSession";
+import { notifyExtension, FOCUS_EVENTS } from "../utils/notifyExtension";
 
 const POMODORO_DURATION = 1500; // 25 minutes
 const TimerContext = createContext(null);
+
+function normalizeTimer(timer = {}) {
+  return {
+    remainingTime: timer.remainingTime ?? POMODORO_DURATION,
+    elapsedTime: timer.elapsedTime ?? 0,
+    isRunning: Boolean(timer.isRunning),
+    startedAt: timer.startedAt ?? null,
+    mode: timer.mode ?? "timer",
+    focusSessionId: timer.focusSessionId ?? null, // CAMBIO: UUID de focus_sessions en Supabase
+    taskSnapshot: timer.taskSnapshot ?? null,
+  };
+}
 
 export function TimerProvider({ children }) {
   const [state, setState] = useState(() => {
@@ -12,25 +35,32 @@ export function TimerProvider({ children }) {
       try {
         const p = JSON.parse(saved);
         const now = Date.now();
+        const timers = {};
         if (p.timers) {
-          Object.values(p.timers).forEach(timer => {
+          Object.entries(p.timers ?? {}).forEach(([taskId, raw]) => {
+            const timer = normalizeTimer(raw);
             if (timer.isRunning && timer.startedAt) {
               const elapsed = Math.floor((now - timer.startedAt) / 1000);
-              if (timer.mode === 'stopwatch') {
+              if (timer.mode === "stopwatch") {
                 // For stopwatch, add elapsed time
                 timer.elapsedTime = (timer.elapsedTime || 0) + elapsed;
               } else {
                 // For timer, subtract elapsed time
-                timer.remainingTime = Math.max(0, timer.remainingTime - elapsed);
+                timer.remainingTime = Math.max(
+                  0,
+                  timer.remainingTime - elapsed,
+                );
                 if (timer.remainingTime === 0) {
                   timer.isRunning = false;
                   timer.startedAt = null;
                 }
               }
             }
+            timers[taskId] = timer;
           });
         }
-        return p;
+
+        return { taskId: p.taskId ?? null, timers: timers ?? {} };
       } catch {
         //
       }
@@ -44,6 +74,11 @@ export function TimerProvider({ children }) {
   const listenersRef = useRef({});
   const saveTimeroutRef = useRef(null);
 
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // persist
   useEffect(() => {
     clearTimeout(saveTimeroutRef.current);
@@ -53,188 +88,333 @@ export function TimerProvider({ children }) {
     return () => clearTimeout(saveTimeroutRef.current);
   }, [state]);
 
+  const completePomodoro = useCallback(
+    async (taskId) => {
+      const timer = stateRef.current.timers[taskId];
+      if (!timer) return;
+
+      const endedAt = new Date().toISOString();
+
+      // CAMBIO: antes → saveFocusSession() INSERTABA una fila nueva.
+      // Ahora → finishFocusSession() ACTUALIZA la fila que se creó en start().
+      if (timer.focusSessionId) {
+        try {
+          await finishFocusSession({
+            sessionId: timer.focusSessionId,
+            durationSeconds: POMODORO_DURATION,
+            endedAt,
+          });
+        } catch (e) {
+          console.error("Could not finish completed session:", e);
+        }
+      }
+      notifyExtension(FOCUS_EVENTS.COMPLETE, {
+        focusSessionId: timer.focusSessionId,
+        taskId,
+        task: timer.taskSnapshot, // CAMBIO: snapshot leído del ESTADO, no de listenersRef.__snapshot
+        durationSeconds: POMODORO_DURATION,
+        userId: user?.id,
+      });
+      const cb = listenersRef.current[taskId];
+      const title = listenersRef.current.__title?.[taskId];
+
+      if (cb) {
+        try {
+          cb();
+        } catch {}
+        delete listenersRef.current[taskId];
+      }
+      if (listenersRef.current.__title?.[taskId]) {
+        delete listenersRef.current.__title[taskId];
+      }
+
+      if (Notification.permission === "granted") {
+        new Notification("Sesion de enfoque completada!", {
+          body: title || "",
+        });
+      }
+
+      setState((prev) => ({
+        taskId: prev.taskId === taskId ? null : prev.taskId,
+        timers: {
+          ...prev.timers,
+          [taskId]: {
+            ...prev.timers[taskId],
+            remainingTime: POMODORO_DURATION,
+            elapsedTime: 0,
+            isRunning: false,
+            startedAt: null,
+            focusSessionId: null, // CAMBIO: limpiar, la sesión ya se cerró
+            taskSnapshot: null, // CAMBIO: limpiar
+          },
+        },
+      }));
+    },
+    [user],
+  );
+
   // countdown/countup interval
   const active = state.taskId && state.timers[state.taskId]?.isRunning;
   useEffect(() => {
+    if (!active) return;
     if (active) {
       intervalRef.current = setInterval(() => {
-        setState(prev => {
-          const id = prev.taskId;
-          if (!id) return prev;
-          const timer = prev.timers[id];
-          if (!timer || !timer.isRunning) return prev;
+        const id = stateRef.current.taskId;
+        const timer = id ? stateRef.current.timers[id] : null;
+        if (!id || !timer || !timer.isRunning) return;
 
-          // Stopwatch mode: count up
-          if (timer.mode === 'stopwatch') {
-            const newElapsed = (timer.elapsedTime || 0) + 1;
+        if (timer.mode === "stopwatch") {
+          setState((prev) => {
+            const t = prev.timers[id];
+            if (!t || !t.isRunning) return prev;
             return {
               ...prev,
               timers: {
                 ...prev.timers,
-                [id]: { ...timer, elapsedTime: newElapsed }
-              }
+                [id]: { ...t, elapsedTime: (t.elapsedTime || 0) + 1 },
+              },
             };
-          }
-
-          // Timer mode: count down
-          const rem = timer.remainingTime - 1;
-          if (rem <= 0) {
-            clearInterval(intervalRef.current);
-            const cb = listenersRef.current[id];
-            const snapshot = listenersRef.current.__snapshot?.[id];
-            let title;
-            if (listenersRef.current.__title) {
-              title = listenersRef.current.__title[id];
-            }
-            saveFocusSession({
-              userId: user?.id,
-              task: snapshot,
-              mode: 'timer',
-              durationSeconds: POMODORO_DURATION,
-              startedAt: new Date(Date.now() - POMODORO_DURATION * 1000).toISOString(),
-              endedAt: new Date().toISOString(),
-            });
-            if (cb) {
-              try { cb(); } catch { }
-              delete listenersRef.current[id];
-            }
-            if (listenersRef.current.__snapshot?.[id]) {
-              delete listenersRef.current.__snapshot[id];
-            }
-            if (title) {
-              delete listenersRef.current.__title[id];
-            }
-            if (Notification.permission === "granted") {
-              new Notification("Sesion de enfoque completada!", { body: title || "" });
-            }
-            return {
-              taskId: null,
-              timers: {
-                ...prev.timers,
-                [id]: { remainingTime: POMODORO_DURATION, isRunning: false, startedAt: null, mode: 'timer', elapsedTime: 0 }
-              }
-            };
-          }
+          });
+          return;
+        }
+        if (timer.remainingTime - 1 <= 0) {
+          clearInterval(intervalRef.current);
+          completePomodoro(id);
+          return;
+        }
+        setState((prev) => {
+          const t = prev.timers[id];
+          if (!t || !t.isRunning) return prev;
           return {
             ...prev,
             timers: {
               ...prev.timers,
-              [id]: { ...timer, remainingTime: rem }
-            }
+              [id]: { ...t, remainingTime: t.remainingTime - 1 },
+            },
           };
         });
       }, 1000);
+      return () => clearInterval(intervalRef.current);
     }
-    return () => clearInterval(intervalRef.current);
-  }, [active, user]);
+  }, [active, completePomodoro]);
 
-  const start = useCallback((taskId, onComplete, taskTitle, taskSnapshot = null) => {
-    if (onComplete) {
-      listenersRef.current[taskId] = onComplete;
-    }
-    if (taskTitle) {
-      listenersRef.current.__title = listenersRef.current.__title || {};
-      listenersRef.current.__title[taskId] = `Buen trabajo en "${taskTitle}"!`;
-    }
-    listenersRef.current.__snapshot = listenersRef.current.__snapshot || {};
-    listenersRef.current.__snapshot[taskId] = taskSnapshot;
+  const start = useCallback(
+    async (taskId, onComplete, taskTitle, taskSnapshot = null) => {
+      // CAMBIO: el snapshot ya NO es opcional. Sin tarea no hay fila en
+      // focus_sessions, no hay focusSessionId y la extensión no puede
+      // vincular actividad. Antes esto fallaba silenciosamente al pausar.
+      if (!user?.id || !taskSnapshot?.id) {
+        console.error(
+          "start() requiere usuario autenticado y taskSnapshot con id",
+        );
+        return;
+      }
 
-    // ← Resetear flag al arrancar nueva sesión
-    listenersRef.current.__saved = listenersRef.current.__saved || {};
-    listenersRef.current.__saved[taskId] = false;
-
-
-
-    setState(prev => {
       const now = Date.now();
-      const newTimers = { ...prev.timers };
+      const startedAt = new Date(now).toISOString();
 
-      // pause other running timers and save elapsed time
-      Object.keys(newTimers).forEach(id => {
-        if (id !== taskId && newTimers[id].isRunning) {
-          const t = newTimers[id];
-          const elapsed = t.startedAt ? Math.floor((now - t.startedAt) / 1000) : 0;
-          if (t.mode === 'stopwatch') {
-            newTimers[id] = {
-              ...t,
-              isRunning: false,
-              startedAt: null,
-              elapsedTime: (t.elapsedTime || 0) + elapsed
-            };
-          } else {
-            newTimers[id] = {
-              ...t,
-              isRunning: false,
-              startedAt: null,
-              remainingTime: Math.max(0, t.remainingTime - elapsed)
-            };
-          }
+      // CAMBIO: cerrar la sesión del timer que estuviera corriendo antes.
+      const prevId = stateRef.current.taskId;
+      const prevTimer = prevId ? stateRef.current.timers[prevId] : null;
+
+      if (
+        prevId &&
+        prevId !== taskId &&
+        prevTimer?.isRunning &&
+        prevTimer.focusSessionId &&
+        prevTimer.startedAt
+      ) {
+        const prevElapsed = Math.floor((now - prevTimer.startedAt) / 1000);
+        try {
+          await finishFocusSession({
+            sessionId: prevTimer.focusSessionId,
+            durationSeconds: prevElapsed,
+          });
+        } catch (e) {
+          console.error("Could not finish previous session:", e);
         }
+
+        notifyExtension(FOCUS_EVENTS.PAUSE, {
+          focusSessionId: prevTimer.focusSessionId,
+          taskId: prevId,
+          durationSeconds: prevElapsed,
+        });
+      }
+
+      // CAMBIO: crear la sesión en Supabase ANTES de arrancar el timer.
+      // De aquí sale el focusSessionId que consume la extensión.
+      let session = null;
+      try {
+        session = await createFocusSession({
+          userId: user.id,
+          task: taskSnapshot,
+          mode: "timer",
+          startedAt,
+        });
+      } catch (e) {
+        // CAMBIO: si no se pudo crear la sesión, el timer NO arranca.
+        // Arrancar sin sesión dejaría a la extensión sin ID de referencia.
+        console.error("Focus session was not created:", e);
+        return;
+      }
+
+      // Callbacks (igual que tu versión)
+      if (onComplete) {
+        listenersRef.current[taskId] = onComplete;
+      }
+      if (taskTitle) {
+        listenersRef.current.__title = listenersRef.current.__title || {};
+        listenersRef.current.__title[taskId] =
+          `Buen trabajo en "${taskTitle}"!`;
+      }
+
+      // CAMBIO: eliminados listenersRef.__snapshot y listenersRef.__saved.
+      // - __snapshot ya no hace falta: el snapshot vive en el estado del timer
+      //   (y por eso sobrevive recargas vía localStorage).
+      // - __saved ya no hace falta: antes evitaba insertar dos veces al pausar;
+      //   ahora pause() ACTUALIZA la sesión, no inserta, así que no hay riesgo
+      //   de duplicados.
+
+      setState((prev) => {
+        const newTimers = { ...prev.timers };
+
+        // Pausar otros timers en ejecución
+        Object.keys(newTimers).forEach((id) => {
+          if (id !== taskId && newTimers[id].isRunning) {
+            const t = newTimers[id];
+            const elapsed = t.startedAt
+              ? Math.floor((now - t.startedAt) / 1000)
+              : 0;
+            if (t.mode === "stopwatch") {
+              newTimers[id] = {
+                ...t,
+                isRunning: false,
+                startedAt: null,
+                elapsedTime: (t.elapsedTime || 0) + elapsed,
+                focusSessionId: null,
+              };
+            } else {
+              newTimers[id] = {
+                ...t,
+                isRunning: false,
+                startedAt: null,
+                remainingTime: Math.max(0, t.remainingTime - elapsed),
+                focusSessionId: null,
+              };
+            }
+          }
+        });
+
+        const existing = newTimers[taskId] || normalizeTimer();
+
+        return {
+          taskId,
+          timers: {
+            ...newTimers,
+            [taskId]: {
+              ...existing,
+              isRunning: true,
+              startedAt: now,
+              focusSessionId: session.id, // guarda el UUID de focus_sessions
+              taskSnapshot, // guarda snapshot en el ESTADO (persiste en localStorage)
+            },
+          },
+        };
       });
 
-      const existing = newTimers[taskId] || {
-        remainingTime: POMODORO_DURATION,
-        isRunning: false,
-        startedAt: null,
-        mode: 'timer',
-        elapsedTime: 0
-      };
-      return {
+      // notifica a la extensión DESPUÉS de crear la sesión,
+      // para que siempre reciba un focusSessionId válido.
+      notifyExtension(FOCUS_EVENTS.START, {
+        focusSessionId: session.id,
         taskId,
-        timers: {
-          ...newTimers,
-          [taskId]: { ...existing, isRunning: true, startedAt: now }
-        }
-      };
-    });
-  }, []);
+        task: taskSnapshot,
+        mode: "timer",
+        startedAt,
+        userId: user.id,
+      });
+    },
+    [user],
+  );
 
-  const pause = useCallback(() => {
-    setState(prev => {
-      const id = prev.taskId;
-      if (!id) return prev;
-      const timer = prev.timers[id];
-      if (!timer || !timer.isRunning) return prev;
+  const pause = useCallback(async () => {
+    const id = stateRef.current.taskId;
+    const timer = id ? stateRef.current.timers[id] : null;
+    if (!id || !timer || !timer.isRunning) return;
 
-      if (timer.startedAt) {
-        const elapsed = Math.floor((Date.now() - timer.startedAt) / 1000);
-        const snapshot = listenersRef.current.__snapshot?.[id];
-        const alreadySaved = listenersRef.current.__saved?.[id];
-        if (elapsed >= 10 && !alreadySaved) {
-          listenersRef.current.__saved = listenersRef.current.__saved || {};
-          listenersRef.current.__saved[id] = true;
+    const now = Date.now();
+    const endedAt = new Date(now).toISOString();
+    const durationSeconds = timer.startedAt
+      ? Math.floor((now - timer.startedAt) / 1000)
+      : 0;
 
-          saveFocusSession({
-            userId: user?.id,
-            task: snapshot,
-            mode: timer.mode,
-            durationSeconds: elapsed,
-            startedAt: new Date(timer.startedAt).toISOString(),
-            endedAt: new Date().toISOString(),
-          });
-        }
+    if (timer.focusSessionId) {
+      try {
+        await finishFocusSession({
+          sessionId: timer.focusSessionId,
+          durationSeconds,
+          endedAt,
+        });
+      } catch (e) {
+        console.error("Could not finish paused session:", e);
       }
-      // For stopwatch: elapsedTime is already updated by the interval, just stop
-      // For timer: remainingTime is already updated by the interval, just stop
+    }
+    notifyExtension(FOCUS_EVENTS.PAUSE, {
+      focusSessionId: timer.focusSessionId,
+      taskId: id,
+      durationSeconds,
+      endedAt,
+    });
+    setState((prev) => {
+      const current = prev.timers[id];
+      if (!current) return prev;
       return {
         ...prev,
         timers: {
           ...prev.timers,
           [id]: {
-            ...timer,
+            ...current,
             isRunning: false,
-            startedAt: null
-          }
-        }
+            startedAt: null,
+            focusSessionId: null, // CAMBIO: la sesión ya se cerró
+            // NOTA: taskSnapshot se CONSERVA por si el usuario reanuda;
+            // start() lo reemplazará con uno fresco de todas formas.
+          },
+        },
       };
     });
-  }, [user]);
+  }, []);
 
-  const reset = useCallback(() => {
-    setState(prev => {
-      const id = prev.taskId;
+  const reset = useCallback(async () => {
+    const id = stateRef.current.taskId;
+    const timer = id ? stateRef.current.timers[id] : null;
+
+    if (timer?.isRunning && timer.focusSessionId) {
+      const now = Date.now();
+      const endedAt = new Date(now).toISOString();
+      const durationSeconds = timer.startedAt
+        ? Math.floor((now - timer.startedAt) / 1000)
+        : 0;
+
+      try {
+        await finishFocusSession({
+          sessionId: timer.focusSessionId,
+          durationSeconds,
+          endedAt,
+        });
+      } catch (e) {
+        console.error("Could not finish session on reset:", e);
+      }
+      //la extensión deja de trackear
+      notifyExtension(FOCUS_EVENTS.STOP, {
+        focusSessionId: timer.focusSessionId,
+        taskId: id,
+        durationSeconds,
+        endedAt,
+      });
+    }
+    setState((prev) => {
       if (!id) return { taskId: null, timers: {} };
-      const timer = prev.timers[id];
+      const current = prev.timers[id];
       return {
         taskId: null,
         timers: {
@@ -243,20 +423,46 @@ export function TimerProvider({ children }) {
             remainingTime: POMODORO_DURATION,
             isRunning: false,
             startedAt: null,
-            mode: timer?.mode || 'timer',
-            elapsedTime: 0
-          }
-        }
+            mode: current?.mode || "timer",
+            elapsedTime: 0,
+            focusSessionId: null, // CAMBIO: limpiar
+            taskSnapshot: null, // CAMBIO: limpiar
+          },
+        },
       };
     });
     listenersRef.current = {};
   }, []);
 
-  const toggleMode = useCallback((taskId) => {
-    setState(prev => {
-      const timer = prev.timers[taskId];
-      const currentMode = timer?.mode || 'timer';
-      const newMode = currentMode === 'timer' ? 'stopwatch' : 'timer';
+  const toggleMode = useCallback(async (taskId) => {
+    const timer = stateRef.current.timers[taskId];
+    if (timer?.isRunning && timer.focusSessionId) {
+      const now = Date.now();
+      const durationSeconds = timer.startedAt
+        ? Math.floor((now - timer.startedAt) / 1000)
+        : 0;
+
+      try {
+        await finishFocusSession({
+          sessionId: timer.focusSessionId,
+          durationSeconds,
+          endedAt: new Date(now).toISOString(),
+        });
+      } catch (e) {
+        console.error("Could not finish session on mode toggle:", e);
+      }
+
+      notifyExtension(FOCUS_EVENTS.STOP, {
+        focusSessionId: timer.focusSessionId,
+        taskId,
+        durationSeconds,
+      });
+    }
+
+    setState((prev) => {
+      const t = prev.timers[taskId];
+      const currentMode = t?.mode || "timer";
+      const newMode = currentMode === "timer" ? "stopwatch" : "timer";
 
       return {
         ...prev,
@@ -267,19 +473,22 @@ export function TimerProvider({ children }) {
             isRunning: false,
             startedAt: null,
             mode: newMode,
-            elapsedTime: 0
-          }
-        }
+            elapsedTime: 0,
+            focusSessionId: null,
+            taskSnapshot: t?.taskSnapshot ?? null, //  conservar snapshot
+          },
+        },
       };
     });
   }, []);
 
-  const value = useMemo(() => ({ state, start, pause, reset, toggleMode, POMODORO_DURATION }), [state, start, pause, reset, toggleMode]);
+  const value = useMemo(
+    () => ({ state, start, pause, reset, toggleMode, POMODORO_DURATION }),
+    [state, start, pause, reset, toggleMode],
+  );
 
   return (
-    <TimerContext.Provider value={value}>
-      {children}
-    </TimerContext.Provider >
+    <TimerContext.Provider value={value}>{children}</TimerContext.Provider>
   );
 }
 
