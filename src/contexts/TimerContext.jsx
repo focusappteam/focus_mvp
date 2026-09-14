@@ -11,7 +11,13 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import { createFocusSession } from "../utils/createFocusSession";
 import { finishFocusSession } from "../utils/finishFocusSession";
-import { notifyExtension, FOCUS_EVENTS } from "../utils/notifyExtension";
+import {
+  notifyExtension,
+  FOCUS_EVENTS,
+  getFocusHistory,
+} from "../utils/notifyExtension";
+import { updateFocusSessionDuration } from "../utils/updateFocusSessions";
+import { supabase } from "../utils/supabase";
 
 const POMODORO_DURATION = 1500; // 25 minutes
 const TimerContext = createContext(null);
@@ -99,11 +105,25 @@ export function TimerProvider({ children }) {
       // Ahora → finishFocusSession() ACTUALIZA la fila que se creó en start().
       if (timer.focusSessionId) {
         try {
-          await finishFocusSession({
-            sessionId: timer.focusSessionId,
-            durationSeconds: POMODORO_DURATION,
-            endedAt,
-          });
+          const history = await getFocusHistory();
+          const MIN_DURATION_SECONDS = 30;
+          const totalSeconds =
+            timer.mode === "stopwatch"
+              ? timer.elapsedTime || 0
+              : POMODORO_DURATION - timer.remainingTime;
+          if (totalSeconds < MIN_DURATION_SECONDS) {
+            await supabase
+              .from("focus_sessions")
+              .delete()
+              .eq("id", timer.focusSessionId);
+          } else {
+            await finishFocusSession({
+              sessionId: timer.focusSessionId,
+              durationSeconds: totalSeconds,
+              endedAt,
+              history,
+            });
+          }
         } catch (e) {
           console.error("Could not finish completed session:", e);
         }
@@ -112,7 +132,10 @@ export function TimerProvider({ children }) {
         focusSessionId: timer.focusSessionId,
         taskId,
         task: timer.taskSnapshot, // CAMBIO: snapshot leído del ESTADO, no de listenersRef.__snapshot
-        durationSeconds: POMODORO_DURATION,
+        durationSeconds:
+          timer.mode === "stopwatch"
+            ? timer.elapsedTime || 0
+            : POMODORO_DURATION - timer.remainingTime,
         userId: user?.id,
       });
       const cb = listenersRef.current[taskId];
@@ -213,23 +236,44 @@ export function TimerProvider({ children }) {
       const now = Date.now();
       const startedAt = new Date(now).toISOString();
 
+      const existingTimer = stateRef.current.timers[taskId];
+      const isResuming = !!existingTimer?.focusSessionId;
+
       // CAMBIO: cerrar la sesión del timer que estuviera corriendo antes.
       const prevId = stateRef.current.taskId;
       const prevTimer = prevId ? stateRef.current.timers[prevId] : null;
 
-      if (
+      const shouldClosePrev =
         prevId &&
         prevId !== taskId &&
         prevTimer?.isRunning &&
         prevTimer.focusSessionId &&
-        prevTimer.startedAt
-      ) {
+        prevTimer.startedAt;
+
+      if (shouldClosePrev) {
         const prevElapsed = Math.floor((now - prevTimer.startedAt) / 1000);
         try {
-          await finishFocusSession({
-            sessionId: prevTimer.focusSessionId,
-            durationSeconds: prevElapsed,
-          });
+          const history = await getFocusHistory();
+
+          const MIN_DURATION_SECONDS = 30;
+          const totalSeconds =
+            prevTimer.mode === "stopwatch"
+              ? prevTimer.elapsedTime || 0
+              : POMODORO_DURATION - prevTimer.remainingTime;
+
+          if (totalSeconds < MIN_DURATION_SECONDS) {
+            await supabase
+              .from("focus_sessions")
+              .delete()
+              .eq("id", prevTimer.focusSessionId);
+          } else {
+            await finishFocusSession({
+              sessionId: prevTimer.focusSessionId,
+              durationSeconds: totalSeconds,
+              endedAt: new Date(now).toISOString(),
+              history, // CAMBIO
+            });
+          }
         } catch (e) {
           console.error("Could not finish previous session:", e);
         }
@@ -244,18 +288,22 @@ export function TimerProvider({ children }) {
       // CAMBIO: crear la sesión en Supabase ANTES de arrancar el timer.
       // De aquí sale el focusSessionId que consume la extensión.
       let session = null;
-      try {
-        session = await createFocusSession({
-          userId: user.id,
-          task: taskSnapshot,
-          mode: "timer",
-          startedAt,
-        });
-      } catch (e) {
-        // CAMBIO: si no se pudo crear la sesión, el timer NO arranca.
-        // Arrancar sin sesión dejaría a la extensión sin ID de referencia.
-        console.error("Focus session was not created:", e);
-        return;
+      if (isResuming) {
+        session = { id: existingTimer.focusSessionId };
+      } else {
+        try {
+          session = await createFocusSession({
+            userId: user.id,
+            task: taskSnapshot,
+            mode: "timer",
+            startedAt,
+          });
+        } catch (e) {
+          // CAMBIO: si no se pudo crear la sesión, el timer NO arranca.
+          // Arrancar sin sesión dejaría a la extensión sin ID de referencia.
+          console.error("Focus session was not created:", e);
+          return;
+        }
       }
 
       // Callbacks (igual que tu versión)
@@ -285,13 +333,18 @@ export function TimerProvider({ children }) {
             const elapsed = t.startedAt
               ? Math.floor((now - t.startedAt) / 1000)
               : 0;
+            const sessionClosed = shouldClosePrev && id === prevId;
+
             if (t.mode === "stopwatch") {
               newTimers[id] = {
                 ...t,
                 isRunning: false,
                 startedAt: null,
                 elapsedTime: (t.elapsedTime || 0) + elapsed,
-                focusSessionId: null,
+                ...(sessionClosed && {
+                  focusSessionId: null,
+                  taskSnapshot: null,
+                }),
               };
             } else {
               newTimers[id] = {
@@ -299,7 +352,10 @@ export function TimerProvider({ children }) {
                 isRunning: false,
                 startedAt: null,
                 remainingTime: Math.max(0, t.remainingTime - elapsed),
-                focusSessionId: null,
+                ...(sessionClosed && {
+                  focusSessionId: null,
+                  taskSnapshot: null,
+                }),
               };
             }
           }
@@ -324,14 +380,22 @@ export function TimerProvider({ children }) {
 
       // notifica a la extensión DESPUÉS de crear la sesión,
       // para que siempre reciba un focusSessionId válido.
-      notifyExtension(FOCUS_EVENTS.START, {
-        focusSessionId: session.id,
-        taskId,
-        task: taskSnapshot,
-        mode: "timer",
-        startedAt,
-        userId: user.id,
-      });
+      if (isResuming) {
+        notifyExtension(FOCUS_EVENTS.RESUME, {
+          focusSessionId: session.id,
+          taskId,
+          task: taskSnapshot,
+        });
+      } else {
+        notifyExtension(FOCUS_EVENTS.START, {
+          focusSessionId: session.id,
+          taskId,
+          task: taskSnapshot,
+          mode: "timer",
+          startedAt,
+          userId: user.id,
+        });
+      }
     },
     [user],
   );
@@ -347,23 +411,28 @@ export function TimerProvider({ children }) {
       ? Math.floor((now - timer.startedAt) / 1000)
       : 0;
 
-    if (timer.focusSessionId) {
-      try {
-        await finishFocusSession({
-          sessionId: timer.focusSessionId,
-          durationSeconds,
-          endedAt,
-        });
-      } catch (e) {
-        console.error("Could not finish paused session:", e);
-      }
-    }
     notifyExtension(FOCUS_EVENTS.PAUSE, {
       focusSessionId: timer.focusSessionId,
       taskId: id,
       durationSeconds,
       endedAt,
     });
+
+    if (timer.focusSessionId) {
+      const totalSeconds =
+        timer.mode === "stopwatch"
+          ? timer.elapsedTime || 0
+          : POMODORO_DURATION - timer.remainingTime;
+
+      try {
+        await updateFocusSessionDuration({
+          sessionId: timer.focusSessionId,
+          durationSeconds: totalSeconds,
+        });
+      } catch (e) {
+        console.error("Could not finish paused session:", e);
+      }
+    }
     setState((prev) => {
       const current = prev.timers[id];
       if (!current) return prev;
@@ -375,7 +444,6 @@ export function TimerProvider({ children }) {
             ...current,
             isRunning: false,
             startedAt: null,
-            focusSessionId: null, // CAMBIO: la sesión ya se cerró
             // NOTA: taskSnapshot se CONSERVA por si el usuario reanuda;
             // start() lo reemplazará con uno fresco de todas formas.
           },
@@ -388,19 +456,29 @@ export function TimerProvider({ children }) {
     const id = stateRef.current.taskId;
     const timer = id ? stateRef.current.timers[id] : null;
 
-    if (timer?.isRunning && timer.focusSessionId) {
-      const now = Date.now();
-      const endedAt = new Date(now).toISOString();
-      const durationSeconds = timer.startedAt
-        ? Math.floor((now - timer.startedAt) / 1000)
-        : 0;
+    if (timer.focusSessionId) {
+      const totalSeconds =
+        timer.mode === "stopwatch"
+          ? timer.elapsedTime || 0
+          : POMODORO_DURATION - timer.remainingTime;
+      const endedAt = new Date().toISOString();
 
       try {
-        await finishFocusSession({
-          sessionId: timer.focusSessionId,
-          durationSeconds,
-          endedAt,
-        });
+        const MIN_DURATION_SECONDS = 30;
+        const history = await getFocusHistory(); // ajusta según como no se quieran guardar las sesiones (Aca esta minimo 30 seg)
+        if (totalSeconds < MIN_DURATION_SECONDS) {
+          await supabase
+            .from("focus_sessions")
+            .delete()
+            .eq("id", timer.focusSessionId);
+        } else {
+          await finishFocusSession({
+            sessionId: timer.focusSessionId,
+            durationSeconds: totalSeconds,
+            endedAt,
+            history,
+          });
+        }
       } catch (e) {
         console.error("Could not finish session on reset:", e);
       }
@@ -408,7 +486,7 @@ export function TimerProvider({ children }) {
       notifyExtension(FOCUS_EVENTS.STOP, {
         focusSessionId: timer.focusSessionId,
         taskId: id,
-        durationSeconds,
+        durationSeconds: totalSeconds,
         endedAt,
       });
     }
@@ -436,18 +514,30 @@ export function TimerProvider({ children }) {
 
   const toggleMode = useCallback(async (taskId) => {
     const timer = stateRef.current.timers[taskId];
-    if (timer?.isRunning && timer.focusSessionId) {
-      const now = Date.now();
-      const durationSeconds = timer.startedAt
-        ? Math.floor((now - timer.startedAt) / 1000)
-        : 0;
+
+    if (timer.focusSessionId) {
+      const totalSeconds =
+        timer.mode === "stopwatch"
+          ? timer.elapsedTime || 0
+          : POMODORO_DURATION - timer.remainingTime;
+      const endedAt = new Date().toISOString();
 
       try {
-        await finishFocusSession({
-          sessionId: timer.focusSessionId,
-          durationSeconds,
-          endedAt: new Date(now).toISOString(),
-        });
+        const history = await getFocusHistory();
+        const MIN_DURATION_SECONDS = 30;
+        if (totalSeconds < MIN_DURATION_SECONDS) {
+          await supabase
+            .from("focus_sessions")
+            .delete()
+            .eq("id", timer.focusSessionId);
+        } else {
+          await finishFocusSession({
+            sessionId: timer.focusSessionId,
+            durationSeconds: totalSeconds,
+            endedAt,
+            history,
+          });
+        }
       } catch (e) {
         console.error("Could not finish session on mode toggle:", e);
       }
@@ -455,7 +545,8 @@ export function TimerProvider({ children }) {
       notifyExtension(FOCUS_EVENTS.STOP, {
         focusSessionId: timer.focusSessionId,
         taskId,
-        durationSeconds,
+        durationSeconds: totalSeconds,
+        endedAt,
       });
     }
 

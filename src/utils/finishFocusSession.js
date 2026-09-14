@@ -4,6 +4,7 @@ export async function finishFocusSession({
   sessionId,
   durationSeconds,
   endedAt = new Date().toISOString(),
+  history,
 }) {
   if (!sessionId) {
     throw new Error("Missing focus session id");
@@ -15,6 +16,7 @@ export async function finishFocusSession({
       duration_seconds: Math.max(0, Math.floor(durationSeconds || 0)),
       ended_at: endedAt,
       is_active: false,
+      ...(history && { history }),
     })
     .eq("id", sessionId)
     .select("id, duration_seconds, ended_at, is_active")
