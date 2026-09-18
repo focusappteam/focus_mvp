@@ -15,7 +15,6 @@ function syncSessionWithExtension(user, profile, session) {
           tokens: session
             ? {
                 access_token: session.access_token,
-                refresh_token: session.refresh_token,
               }
             : null,
         },
